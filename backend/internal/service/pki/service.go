@@ -87,30 +87,57 @@ func certificateStatusLabel(status string) string {
 
 func parseSubject(text string) (pkix.Name, error) {
 	var n pkix.Name
-	for _, part := range strings.Split(text, ",") {
+	for _, part := range splitSubjectFields(text) {
 		pair := strings.SplitN(strings.TrimSpace(part), "=", 2)
 		if len(pair) != 2 {
 			continue
 		}
 		switch strings.ToUpper(strings.TrimSpace(pair[0])) {
 		case "CN":
-			n.CommonName = pair[1]
+			n.CommonName = strings.TrimSpace(pair[1])
 		case "O":
-			n.Organization = []string{pair[1]}
+			n.Organization = []string{strings.TrimSpace(pair[1])}
 		case "OU":
-			n.OrganizationalUnit = []string{pair[1]}
+			n.OrganizationalUnit = []string{strings.TrimSpace(pair[1])}
 		case "C":
-			n.Country = []string{pair[1]}
+			n.Country = []string{strings.TrimSpace(pair[1])}
 		case "ST":
-			n.Province = []string{pair[1]}
+			n.Province = []string{strings.TrimSpace(pair[1])}
 		case "L":
-			n.Locality = []string{pair[1]}
+			n.Locality = []string{strings.TrimSpace(pair[1])}
 		}
 	}
 	if n.CommonName == "" {
 		return n, errors.New("Subject 必须包含 CN")
 	}
 	return n, nil
+}
+
+func splitSubjectFields(text string) []string {
+	fields := make([]string, 0, 6)
+	fieldStart := 0
+	for index := 0; index < len(text); index++ {
+		if text[index] != ',' || !startsSubjectField(text[index+1:]) {
+			continue
+		}
+		fields = append(fields, text[fieldStart:index])
+		fieldStart = index + 1
+	}
+	return append(fields, text[fieldStart:])
+}
+
+func startsSubjectField(text string) bool {
+	text = strings.TrimLeft(text, " \t")
+	equalsIndex := strings.IndexByte(text, '=')
+	if equalsIndex < 0 {
+		return false
+	}
+	switch strings.ToUpper(strings.TrimSpace(text[:equalsIndex])) {
+	case "CN", "O", "OU", "C", "ST", "L":
+		return true
+	default:
+		return false
+	}
 }
 func keyFor(algorithm string) (crypto.Signer, error) {
 	switch algorithm {

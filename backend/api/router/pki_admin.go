@@ -51,7 +51,7 @@ func (r *Router) caCertificate(w http.ResponseWriter, q *http.Request) {
 		return
 	}
 	write(w, http.StatusOK, map[string]string{
-		"filename": sanitizeFilename(item.Name) + ".pem",
+		"filename": sanitizeFilename(item.Name) + ".crt",
 		"content":  item.CertificatePEM,
 	})
 }
@@ -62,7 +62,7 @@ func (r *Router) downloadCACertificate(w http.ResponseWriter, q *http.Request) {
 		write(w, http.StatusNotFound, map[string]string{"message": "CA 不存在"})
 		return
 	}
-	writeCertificateFile(w, sanitizeFilename(item.Name)+".pem", item.CertificatePEM)
+	writeCertificateFile(w, sanitizeFilename(item.Name)+".crt", item.CertificatePEM)
 }
 
 func (r *Router) deleteCA(w http.ResponseWriter, q *http.Request) {

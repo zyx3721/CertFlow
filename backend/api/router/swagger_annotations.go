@@ -188,7 +188,7 @@ func swaggerListCAs() {}
 func swaggerCreateCA() {}
 
 // swaggerCACertificate godoc
-// @Summary 获取 CA PEM 证书
+// @Summary 获取 CA 证书内容
 // @Tags CA
 // @Produce json
 // @Security BearerAuth
@@ -199,7 +199,7 @@ func swaggerCreateCA() {}
 func swaggerCACertificate() {}
 
 // swaggerDownloadCACertificate godoc
-// @Summary 下载 CA PEM 证书
+// @Summary 下载 CA 证书（.crt）
 // @Tags CA
 // @Produce application/x-pem-file
 // @Security BearerAuth
@@ -279,7 +279,7 @@ func swaggerCertificateCSRInspect() {}
 
 // swaggerRequestCertificate godoc
 // @Summary 提交证书申请
-// @Description Subject 必须包含与通用名称一致的 CN；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为 1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx 申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
+// @Description Subject 必须包含与通用名称一致的 CN，字段值可直接包含英文逗号；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为 1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx 申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
 // @Tags Certificates
 // @Accept json
 // @Produce json
