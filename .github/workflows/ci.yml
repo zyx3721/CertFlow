@@ -96,7 +96,7 @@ jobs:
           GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow.exe ./cmd/server/main.go
           prepare_package "dist/windows_amd64"
           mv certflow.exe dist/windows_amd64/
-          cd dist && zip -r certflow_${VERSION}_windows_amd64.zip windows_amd64
+          cd dist && zip -r certflow_${VERSION}_windows_amd64.zip windows_amd64 && cd ..
           rm -rf dist/windows_amd64
 
           echo "🔨 编译 Windows ARM64..."
