@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/page-header';
 import { AppTooltip } from '@/components/app-tooltip';
 import { getStoredUser, userHasPermission } from '@/lib/auth';
 import { CAExpiryDatePicker } from './CAExpiryDatePicker';
+import { formatSubjectForDisplay } from './CASubjectDisplay';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -205,7 +206,7 @@ export function CAPage() {
                 </span>
               </div>
               <p className="mt-2 truncate font-mono text-xs text-[var(--zl-text-muted)]">
-                {ca.subject}
+                {formatSubjectForDisplay(ca.subject)}
               </p>
             </div>
             <dl className="grid grid-cols-3 gap-5 text-center text-xs">
@@ -437,7 +438,7 @@ export function CAPage() {
                 <div className="hidden sm:block" />
               )}
               <div className="sm:col-span-2">
-                <Field label="Subject" required hint="必须包含 CN，可使用 O、OU、C、ST、L">
+                <Field label="Subject" required hint="必须包含 CN，可使用 O、OU、C、ST、L，字段值可直接包含英文逗号">
                   <Input
                     value={form.subject}
                     onChange={event =>
@@ -457,14 +458,17 @@ export function CAPage() {
               disabled={createMutation.isPending}
               onClick={() => {
                 const caName = form.name.trim();
-                if (
-                  !caName ||
-                  !form.subject.includes('CN=') ||
-                  (form.type !== 'root' && !form.parentId)
-                ) {
-                  toast.error('请完整填写 CA 配置');
-                  return;
-                }
+                const subject = form.subject.trim();
+                const parentId = form.parentId.trim();
+                if (!caName) return toast.error('CA 名称不能为空');
+                if (!form.algorithm) return toast.error('密钥算法不能为空');
+                if (!form.notAfter) return toast.error('到期日期不能为空');
+                if (!subject) return toast.error('Subject 不能为空');
+                if (form.type !== 'root' && !parentId) return toast.error('上级 CA 不能为空');
+
+                const notAfter = new Date(`${form.notAfter}T23:59:59+08:00`);
+                if (Number.isNaN(notAfter.getTime())) return toast.error('到期日期格式不正确');
+                if (!/(?:^|,)\s*CN\s*=\s*[^,]+/i.test(subject)) return toast.error('Subject 必须包含 CN');
                 if (items.some(item => item.name === caName)) {
                   toast.error('CA 名称已存在，请使用其他名称');
                   return;
@@ -472,7 +476,9 @@ export function CAPage() {
                 createMutation.mutate({
                   ...form,
                   name: caName,
-                  notAfter: new Date(`${form.notAfter}T23:59:59+08:00`).toISOString(),
+                  subject,
+                  parentId,
+                  notAfter: notAfter.toISOString(),
                 });
               }}
             >
@@ -496,7 +502,7 @@ export function CAPage() {
                 ['算法', preview.ca.algorithm],
                 ['生效时间', formatDate(preview.ca.notBefore).split(' ')[0]],
                 ['到期时间', formatDate(preview.ca.notAfter).split(' ')[0]],
-                ['Subject', preview.ca.subject],
+                ['Subject', formatSubjectForDisplay(preview.ca.subject)],
               ].map(([label, detail]) => (
                 <div
                   key={label}

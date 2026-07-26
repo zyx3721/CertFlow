@@ -166,7 +166,7 @@ export async function downloadCACertificate(id: string) {
   });
   if (!response.ok) throw new Error('CA 证书下载失败');
   const disposition = response.headers.get('content-disposition') ?? '';
-  const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? 'ca.pem';
+  const filename = /filename="?([^";]+)"?/i.exec(disposition)?.[1] ?? 'ca.crt';
   return { blob: await response.blob(), filename };
 }
 
