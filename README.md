@@ -1096,6 +1096,7 @@ server {
 
 # 八、版本历史
 
+- [v1.0.2](verchanglog/v1.0.2.md) - 2026-07-26 修复审计日志来源 IP 记录
 - [v1.0.1](verchanglog/v1.0.1.md) - 2026-07-26 CA 证书下载与 Subject 处理优化
 - [v1.0.0](verchanglog/v1.0.0.md) - 2026-07-26 首次正式发布
 
