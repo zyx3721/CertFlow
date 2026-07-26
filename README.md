@@ -1094,6 +1094,8 @@ server {
 
 # 八、版本历史
 
+- [v1.0.0](verchanglog/v1.0.0.md) - 2026-07-26 首次正式发布
+
 # 九、许可证
 
 本项目采用 MIT License，详见 [LICENSE](LICENSE)。
