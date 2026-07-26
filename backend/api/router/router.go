@@ -170,11 +170,41 @@ func (r *Router) requirePermission(permission string, next http.HandlerFunc) htt
 }
 func current(q *http.Request) domain.User { return q.Context().Value(userKey).(domain.User) }
 func clientIP(q *http.Request) string {
-	host, _, err := net.SplitHostPort(q.RemoteAddr)
+	remoteIP := requestIP(q.RemoteAddr)
+	if !isLoopbackIP(remoteIP) {
+		return remoteIP
+	}
+
+	for _, value := range strings.Split(q.Header.Get("X-Forwarded-For"), ",") {
+		if forwardedIP := validIP(value); forwardedIP != "" {
+			return forwardedIP
+		}
+	}
+	if realIP := validIP(q.Header.Get("X-Real-IP")); realIP != "" {
+		return realIP
+	}
+	return remoteIP
+}
+
+func requestIP(remoteAddr string) string {
+	host, _, err := net.SplitHostPort(remoteAddr)
 	if err == nil {
 		return host
 	}
-	return q.RemoteAddr
+	return remoteAddr
+}
+
+func isLoopbackIP(value string) bool {
+	ip := net.ParseIP(value)
+	return ip != nil && ip.IsLoopback()
+}
+
+func validIP(value string) string {
+	ip := net.ParseIP(strings.TrimSpace(value))
+	if ip == nil {
+		return ""
+	}
+	return ip.String()
 }
 func (r *Router) health(w http.ResponseWriter, q *http.Request) {
 	write(w, 200, map[string]any{"ok": true, "service": "certflow", "time": time.Now().UTC()})
