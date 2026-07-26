@@ -1,0 +1,2419 @@
+basePath: /
+definitions:
+  domain.Audit:
+    properties:
+      action:
+        type: string
+      detail:
+        type: string
+      id:
+        type: string
+      ip:
+        type: string
+      module:
+        type: string
+      result:
+        type: string
+      target:
+        type: string
+      timestamp:
+        type: string
+      username:
+        type: string
+    type: object
+  domain.CA:
+    properties:
+      algorithm:
+        type: string
+      certificatePem:
+        type: string
+      id:
+        type: string
+      issuedCerts:
+        type: integer
+      name:
+        type: string
+      notAfter:
+        type: string
+      notBefore:
+        type: string
+      parentId:
+        type: string
+      revokedCerts:
+        type: integer
+      status:
+        type: string
+      subject:
+        type: string
+      type:
+        type: string
+    type: object
+  domain.CRLEntry:
+    properties:
+      caId:
+        type: string
+      caName:
+        type: string
+      commonName:
+        type: string
+      id:
+        type: string
+      reason:
+        type: string
+      revokedAt:
+        type: string
+      serialNumber:
+        type: string
+    type: object
+  domain.Certificate:
+    properties:
+      algorithm:
+        type: string
+      applicant:
+        type: string
+      caId:
+        type: string
+      certificatePem:
+        type: string
+      commonName:
+        type: string
+      csrPem:
+        type: string
+      fingerprint:
+        type: string
+      id:
+        type: string
+      notAfter:
+        type: string
+      notBefore:
+        type: string
+      privateKeyPem:
+        type: string
+      purpose:
+        type: string
+      rejectReason:
+        type: string
+      revokeReason:
+        type: string
+      revokedAt:
+        type: string
+      san:
+        items:
+          type: string
+        type: array
+      serialNumber:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      subject:
+        type: string
+    type: object
+  domain.PasswordResetCaptcha:
+    properties:
+      expiresAt:
+        type: string
+      question:
+        type: string
+      token:
+        type: string
+    type: object
+  domain.Role:
+    properties:
+      builtin:
+        type: boolean
+      createdAt:
+        type: string
+      description:
+        type: string
+      disabled:
+        type: boolean
+      id:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  domain.Session:
+    properties:
+      expiresAt:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
+  domain.User:
+    properties:
+      createdAt:
+        type: string
+      directRoles:
+        items:
+          $ref: '#/definitions/domain.Role'
+        type: array
+      disabled:
+        type: boolean
+      displayName:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      lastLoginAt:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+      role:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/domain.Role'
+        type: array
+      source:
+        type: string
+      updatedAt:
+        type: string
+      username:
+        type: string
+    type: object
+  domain.UserGroup:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      disabled:
+        type: boolean
+      id:
+        type: string
+      members:
+        items:
+          $ref: '#/definitions/domain.User'
+        type: array
+      name:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/domain.Role'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  domain.Workflow:
+    properties:
+      applicant:
+        type: string
+      certName:
+        type: string
+      certificateId:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: string
+      rejectReason:
+        type: string
+      status:
+        type: string
+    type: object
+  repository.NotificationChannelSetting:
+    properties:
+      approvalEnabled:
+        type: boolean
+      config:
+        additionalProperties: {}
+        type: object
+      id:
+        type: string
+      name:
+        type: string
+      passwordResetEnabled:
+        type: boolean
+      updatedAt:
+        type: string
+    type: object
+  router.auditListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.Audit'
+        type: array
+      total:
+        type: integer
+    type: object
+  router.caDeletionCheckResponse:
+    properties:
+      deletable:
+        type: boolean
+    type: object
+  router.caListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.CA'
+        type: array
+      total:
+        type: integer
+    type: object
+  router.certificateCSRInspectRequest:
+    properties:
+      csrPEM:
+        type: string
+    type: object
+  router.certificateCSRInspectResponse:
+    properties:
+      algorithm:
+        type: string
+      san:
+        items:
+          type: string
+        type: array
+      subject:
+        properties:
+          commonName:
+            type: string
+          country:
+            type: string
+          locality:
+            type: string
+          org:
+            type: string
+          orgUnit:
+            type: string
+          province:
+            type: string
+        type: object
+    type: object
+  router.certificateCSRPreviewRequest:
+    properties:
+      algorithm:
+        enum:
+        - RSA-2048
+        - RSA-4096
+        - ECDSA-P256
+        - ECDSA-P384
+        - ED25519
+        type: string
+      san:
+        items:
+          type: string
+        type: array
+      subject:
+        example: CN=api.example.com,O=Acme Corp,C=CN
+        type: string
+    type: object
+  router.certificateCSRPreviewResponse:
+    properties:
+      csrPEM:
+        type: string
+      privateKeyPEM:
+        type: string
+    type: object
+  router.certificateListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.Certificate'
+        type: array
+      total:
+        type: integer
+    type: object
+  router.certificateRequest:
+    properties:
+      algorithm:
+        type: string
+      caID:
+        type: string
+      commonName:
+        type: string
+      csrPEM:
+        type: string
+      privateKeyPEM:
+        type: string
+      purpose:
+        enum:
+        - server
+        - client
+        - mtls
+        type: string
+      san:
+        items:
+          type: string
+        type: array
+      subject:
+        type: string
+      validityDays:
+        type: integer
+    type: object
+  router.changePasswordRequest:
+    properties:
+      currentPassword:
+        type: string
+      newPassword:
+        type: string
+    type: object
+  router.configurationRequest:
+    properties:
+      clearConfig:
+        type: boolean
+      config:
+        additionalProperties: {}
+        type: object
+      enabled:
+        type: boolean
+      name:
+        type: string
+    type: object
+  router.createCARequest:
+    properties:
+      algorithm:
+        enum:
+        - RSA-2048
+        - RSA-4096
+        - ECDSA-P256
+        - ECDSA-P384
+        - ED25519
+        type: string
+      name:
+        type: string
+      notAfter:
+        type: string
+      parentId:
+        type: string
+      subject:
+        example: CN=Example CA,O=Example
+        type: string
+      type:
+        enum:
+        - root
+        - intermediate
+        - issuing
+        type: string
+    type: object
+  router.crlListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.CRLEntry'
+        type: array
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+    type: object
+  router.emailConfigurationRequest:
+    properties:
+      clearConfig:
+        type: boolean
+      config:
+        additionalProperties: {}
+        type: object
+      passwordResetEnabled:
+        type: boolean
+    type: object
+  router.emailTestRequest:
+    properties:
+      to:
+        format: email
+        type: string
+    type: object
+  router.errorDocResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  router.healthResponse:
+    properties:
+      ok:
+        type: boolean
+      service:
+        type: string
+      time:
+        type: string
+    type: object
+  router.listResponse:
+    properties:
+      items:
+        items: {}
+        type: array
+      total:
+        type: integer
+    type: object
+  router.loginRequest:
+    properties:
+      password:
+        example: change-me
+        type: string
+      provider:
+        example: local
+        type: string
+      username:
+        example: admin
+        type: string
+    type: object
+  router.managedUserRequest:
+    properties:
+      disabled:
+        type: boolean
+      displayName:
+        type: string
+      email:
+        type: string
+      password:
+        type: string
+      roleKeys:
+        items:
+          type: string
+        type: array
+      username:
+        type: string
+    type: object
+  router.notificationChannelRequest:
+    properties:
+      approvalEnabled:
+        type: boolean
+      clearConfig:
+        type: boolean
+      config:
+        additionalProperties: {}
+        type: object
+      passwordResetEnabled:
+        type: boolean
+    type: object
+  router.notificationChannelTestRequest:
+    properties:
+      to:
+        type: string
+    type: object
+  router.ocspHealthResponse:
+    properties:
+      enabled:
+        type: boolean
+      ok:
+        type: boolean
+    type: object
+  router.ocspStatusResponse:
+    properties:
+      checkedAt:
+        example: "2026-07-26 00:59:35"
+        type: string
+      commonName:
+        type: string
+      notAfter:
+        example: "2027-07-26 00:00:00"
+        type: string
+      notBefore:
+        example: "2026-07-26 00:00:00"
+        type: string
+      reason:
+        example: ocspDisabled
+        type: string
+      revokedAt:
+        example: "2026-07-26 00:12:15"
+        type: string
+      serialNumber:
+        type: string
+      status:
+        example: good
+        type: string
+      valid:
+        type: boolean
+    type: object
+  router.passwordResetConfirmRequest:
+    properties:
+      code:
+        type: string
+      confirmPassword:
+        type: string
+      newPassword:
+        type: string
+      username:
+        type: string
+      verificationToken:
+        type: string
+    type: object
+  router.passwordResetSendRequest:
+    properties:
+      channel:
+        example: email
+        type: string
+      username:
+        type: string
+      verificationToken:
+        type: string
+      verifyEmail:
+        type: string
+    type: object
+  router.passwordResetVerifyRequest:
+    properties:
+      captchaAnswer:
+        type: string
+      captchaToken:
+        type: string
+      username:
+        type: string
+    type: object
+  router.pkiSettings:
+    properties:
+      appName:
+        type: string
+      appSubtitle:
+        type: string
+      autoRenew:
+        type: boolean
+      crlEnabled:
+        type: boolean
+      crlIntervalHours:
+        type: integer
+      crlUrl:
+        type: string
+      expiryNotificationCron:
+        type: string
+      expiryNotificationDays:
+        type: integer
+      iconData:
+        type: string
+      loginName:
+        type: string
+      ocspEnabled:
+        type: boolean
+      ocspUrl:
+        type: string
+      passwordResetRateLimitMinutes:
+        type: integer
+      passwordResetSendCooldownMinutes:
+        type: number
+      renewDays:
+        type: integer
+      resetCaptchaTtlMinutes:
+        type: integer
+      resetCodeTtlMinutes:
+        type: integer
+      siteName:
+        type: string
+    type: object
+  router.publicAuthProvidersResponse:
+    properties:
+      items:
+        items:
+          additionalProperties: {}
+          type: object
+        type: array
+      passwordResetEnabled:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  router.publicSettingsResponse:
+    properties:
+      appName:
+        type: string
+      appSubtitle:
+        type: string
+      expiryNotificationDays:
+        type: integer
+      iconData:
+        type: string
+      loginName:
+        type: string
+      siteName:
+        type: string
+    type: object
+  router.revokeCertificateRequest:
+    properties:
+      reason:
+        enum:
+        - keyCompromise
+        - cACompromise
+        - affiliationChanged
+        - superseded
+        - cessationOfOperation
+        - unspecified
+        type: string
+    type: object
+  router.roleRequest:
+    properties:
+      description:
+        type: string
+      key:
+        type: string
+      name:
+        type: string
+      permissions:
+        items:
+          type: string
+        type: array
+    type: object
+  router.statusResponse:
+    properties:
+      status:
+        type: string
+    type: object
+  router.userGroupRequest:
+    properties:
+      description:
+        type: string
+      disabled:
+        type: boolean
+      memberIds:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      roleKeys:
+        items:
+          type: string
+        type: array
+    type: object
+  router.userStatusRequest:
+    properties:
+      disabled:
+        type: boolean
+    type: object
+  router.workflowListResponse:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/domain.Workflow'
+        type: array
+      total:
+        type: integer
+    type: object
+  router.workflowUpdateRequest:
+    properties:
+      reject_reason:
+        type: string
+      status:
+        enum:
+        - approved
+        - rejected
+        type: string
+    type: object
+info:
+  contact: {}
+  description: CertFlow 企业内部 PKI 证书生命周期管理平台后端 API，提供认证、CA、证书、CRL、OCSP、审批、审计和系统配置接口。
+  title: CertFlow API
+  version: "1.0"
+paths:
+  /api/health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.healthResponse'
+      summary: 健康检查
+      tags:
+      - Health
+  /api/v1/audit-logs:
+    get:
+      parameters:
+      - description: 返回数量
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.auditListResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取审计日志
+      tags:
+      - Audit
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: LDAP 认证成功但平台未创建同名用户或该用户已禁用时，返回“用户未在平台中启用”。
+      parameters:
+      - description: 登录参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 登录
+      tags:
+      - Auth
+  /api/v1/auth/logout:
+    post:
+      responses:
+        "204":
+          description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 注销当前会话
+      tags:
+      - Auth
+  /api/v1/auth/me:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户
+      tags:
+      - Auth
+  /api/v1/auth/password-reset/captcha:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.PasswordResetCaptcha'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 获取找回密码图形验证码
+      tags:
+      - PasswordReset
+  /api/v1/auth/password-reset/confirm:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 重置参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.passwordResetConfirmRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 确认找回密码
+      tags:
+      - PasswordReset
+  /api/v1/auth/password-reset/send:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 验证令牌与媒介
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.passwordResetSendRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 发送找回密码邮件验证码
+      tags:
+      - PasswordReset
+  /api/v1/auth/password-reset/verify:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 账号和验证码
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.passwordResetVerifyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 校验账号与图形验证码
+      tags:
+      - PasswordReset
+  /api/v1/auth/providers:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.publicAuthProvidersResponse'
+      summary: 获取登录方式
+      tags:
+      - Auth
+  /api/v1/cas:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.caListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取 CA 列表
+      tags:
+      - CA
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: CA 参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.createCARequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CA'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建 CA
+      tags:
+      - CA
+  /api/v1/cas/{id}:
+    delete:
+      parameters:
+      - description: CA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 递归删除未关联证书的 CA 树
+      tags:
+      - CA
+  /api/v1/cas/{id}/certificate:
+    get:
+      parameters:
+      - description: CA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取 CA PEM 证书
+      tags:
+      - CA
+  /api/v1/cas/{id}/deletion-check:
+    get:
+      parameters:
+      - description: CA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.caDeletionCheckResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 检查 CA 树是否可删除
+      tags:
+      - CA
+  /api/v1/cas/{id}/download:
+    get:
+      parameters:
+      - description: CA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/x-pem-file
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 下载 CA PEM 证书
+      tags:
+      - CA
+  /api/v1/certificates:
+    get:
+      description: 待审批或已驳回记录的序列号为 REQ:xxxxxxxx 申请编号，指纹为 16 字节的申请材料标识；已签发、已撤销或已过期记录返回冒号分隔的实际
+        X.509 序列号及 SHA-256 证书指纹。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.certificateListResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取证书列表
+      tags:
+      - Certificates
+    post:
+      consumes:
+      - application/json
+      description: Subject 必须包含与通用名称一致的 CN；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为
+        1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx
+        申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
+      parameters:
+      - description: 证书申请
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.certificateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Certificate'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 提交证书申请
+      tags:
+      - Certificates
+  /api/v1/certificates/{id}:
+    delete:
+      parameters:
+      - description: 证书 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除非有效状态的证书
+      tags:
+      - Certificates
+  /api/v1/certificates/{id}/download:
+    get:
+      description: 已签发证书中，手动 CSR 申请返回单个 CRT 文件，系统生成模式返回包含私钥和完整证书链的 ZIP 压缩包；被驳回申请返回
+        CSR 文件，系统生成模式额外返回包含私钥的 ZIP 压缩包。
+      parameters:
+      - description: 证书 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: CRT 证书或 ZIP 压缩包
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 下载证书或被驳回申请的 CSR 材料
+      tags:
+      - Certificates
+  /api/v1/certificates/{id}/package:
+    get:
+      description: 响应可能包含证书、私钥和 CSR，需具备下载证书权限。未签发申请返回 16 字节申请材料标识，已签发记录返回冒号分隔的 SHA-256
+        证书指纹。
+      parameters:
+      - description: 证书 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Certificate'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取授权范围内的证书材料
+      tags:
+      - Certificates
+  /api/v1/certificates/{id}/revoke:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 证书 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 撤销原因
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.revokeCertificateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 撤销有效证书
+      tags:
+      - Certificates
+  /api/v1/certificates/{id}/verify:
+    get:
+      parameters:
+      - description: 证书 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 校验证书状态
+      tags:
+      - Certificates
+  /api/v1/certificates/csr-inspect:
+    post:
+      consumes:
+      - application/json
+      description: 校验 PKCS#10 CSR 签名，并返回 Subject、SAN 和公钥算法，供证书申请表单回填。
+      parameters:
+      - description: CSR 内容
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.certificateCSRInspectRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.certificateCSRInspectResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 解析手动提供的 CSR
+      tags:
+      - Certificates
+  /api/v1/certificates/csr-preview:
+    post:
+      consumes:
+      - application/json
+      description: 为系统生成模式创建真实 CSR 和与其匹配的私钥。私钥仅随当前申请提交，并由服务端加密保存。
+      parameters:
+      - description: CSR 预览参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.certificateCSRPreviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.certificateCSRPreviewResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 生成证书申请 CSR 预览
+      tags:
+      - Certificates
+  /api/v1/certificates/trend:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取近六个月证书趋势
+      tags:
+      - Certificates
+  /api/v1/crl:
+    get:
+      parameters:
+      - description: CA ID
+        in: query
+        name: caId
+        type: string
+      - description: 撤销原因
+        in: query
+        name: reason
+        type: string
+      - description: 序列号、通用名称或 CA 关键词
+        in: query
+        name: keyword
+        type: string
+      - default: 1
+        description: 页码
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: 每页条数，最大 100
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.crlListResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取 CRL 条目
+      tags:
+      - CRL
+  /api/v1/crl/download:
+    get:
+      parameters:
+      - description: CA ID；省略时下载全部启用 CA 的 CRL 集合
+        in: query
+        name: caId
+        type: string
+      - description: 撤销原因
+        in: query
+        name: reason
+        type: string
+      - description: 序列号、通用名称或 CA 关键词
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/pkix-crl
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 即时生成并下载当前筛选范围的 CRL
+      tags:
+      - CRL
+  /api/v1/crl/metadata:
+    get:
+      parameters:
+      - description: CA ID
+        in: query
+        name: caId
+        type: string
+      - description: 撤销原因
+        in: query
+        name: reason
+        type: string
+      - description: 序列号、通用名称或 CA 关键词
+        in: query
+        name: keyword
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 CRL 元数据（选定 CA 时返回其实际 CRL 签名算法）
+      tags:
+      - CRL
+  /api/v1/public/settings:
+    get:
+      description: 无需登录，用于认证页和控制台读取站点名称、品牌名称与图标。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.publicSettingsResponse'
+      summary: 获取公开品牌配置
+      tags:
+      - Settings
+  /api/v1/settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.pkiSettings'
+      security:
+      - BearerAuth: []
+      summary: 获取系统基础配置
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 系统基础配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.pkiSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.pkiSettings'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 保存系统基础配置
+      tags:
+      - Settings
+  /api/v1/settings/auth-provider:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取 LDAP 配置
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: LDAP 配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.configurationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 保存 LDAP 配置
+      tags:
+      - Settings
+  /api/v1/settings/auth-provider/test:
+    post:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 测试 LDAP 配置
+      tags:
+      - Settings
+  /api/v1/settings/email:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: 获取找回密码邮件配置
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 邮件配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.emailConfigurationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 保存找回密码邮件配置
+      tags:
+      - Settings
+  /api/v1/settings/email/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 测试收件人
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.emailTestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 发送测试邮件
+      tags:
+      - Settings
+  /api/v1/settings/notifications:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取通知媒介配置
+      tags:
+      - Settings
+  /api/v1/settings/notifications/{id}:
+    put:
+      consumes:
+      - application/json
+      description: 支持 Webhook、邮件、飞书、企业微信和钉钉媒介；审批通知内容由系统内置。Webhook 可配置 POST、PUT 或 PATCH
+        请求方法，以及可选的 headers JSON 对象（键和值均为字符串）。
+      parameters:
+      - description: 媒介标识
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 通知媒介参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.notificationChannelRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/repository.NotificationChannelSetting'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新通知媒介配置
+      tags:
+      - Settings
+  /api/v1/settings/notifications/{id}/test:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 媒介标识
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 测试参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.notificationChannelTestRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 测试通知媒介
+      tags:
+      - Settings
+  /api/v1/settings/permissions:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取可分配权限
+      tags:
+      - Settings
+  /api/v1/settings/roles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取角色列表
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: 角色标识必须以小写字母开头，只能包含小写字母、数字、点、下划线或连字符，且不可重复。
+      parameters:
+      - description: 角色参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.roleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Role'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建自定义角色
+      tags:
+      - Settings
+  /api/v1/settings/roles/{id}:
+    delete:
+      description: 内置角色不可删除；自定义角色必须先禁用再删除。
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除自定义角色
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 自定义角色创建后标识和名称不可修改；可更新描述和权限，启用状态由独立状态接口维护。
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 角色参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.roleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Role'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新自定义角色
+      tags:
+      - Settings
+  /api/v1/settings/roles/{id}/disabled:
+    post:
+      consumes:
+      - application/json
+      description: 内置角色不可禁用；禁用自定义角色后，该角色不再授予权限，已有用户和群组关联会保留。
+      parameters:
+      - description: 角色 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 启用状态
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.userStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Role'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 启用或禁用自定义角色
+      tags:
+      - Settings
+  /api/v1/settings/user-groups:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取用户群组列表
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: 群组名称不能为空且不可重复；未指定群组角色时默认使用 viewer。
+      parameters:
+      - description: 用户群组参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.userGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.UserGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建用户群组
+      tags:
+      - Settings
+  /api/v1/settings/user-groups/{id}:
+    delete:
+      description: 只能删除已禁用的用户群组。
+      parameters:
+      - description: 用户群组 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除用户群组
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 用户群组创建后名称不可修改。
+      parameters:
+      - description: 用户群组 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户群组参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.userGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.UserGroup'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新用户群组
+      tags:
+      - Settings
+  /api/v1/settings/users:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.listResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取系统配置用户列表
+      tags:
+      - Settings
+    post:
+      consumes:
+      - application/json
+      description: 用户名和有效邮箱必填，密码至少 6 个字符；用户名不可重复；未指定角色时默认使用 viewer。
+      parameters:
+      - description: 用户配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.managedUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 创建系统配置用户
+      tags:
+      - Settings
+  /api/v1/settings/users/{id}:
+    delete:
+      description: 默认管理员和当前登录用户不可删除，其他用户必须先禁用再删除。
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除系统配置用户
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 用户创建后用户名不可修改；有效邮箱必填，新密码留空时不修改，填写时至少 6 个字符；未指定角色时默认使用 viewer。
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 用户配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.managedUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 更新系统配置用户
+      tags:
+      - Settings
+  /api/v1/settings/users/{id}/disabled:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 用户 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 启用状态
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.userStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 启用或禁用系统配置用户
+      tags:
+      - Settings
+  /api/v1/users/change-password:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 密码参数（新密码不得与当前密码相同）
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.changePasswordRequest'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 修改当前用户密码
+      tags:
+      - Auth
+  /api/v1/workflows:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.workflowListResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取审批列表
+      tags:
+      - Workflows
+  /api/v1/workflows/{id}:
+    delete:
+      parameters:
+      - description: 审批记录 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 删除待审批申请
+      tags:
+      - Workflows
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 审批记录 ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 审批结果
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.workflowUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.statusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 批准或驳回证书申请
+      tags:
+      - Workflows
+  /crl/{caId}.crl:
+    get:
+      parameters:
+      - description: CA ID
+        in: path
+        name: caId
+        required: true
+        type: string
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: file
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 即时生成并下载公开 CRL
+      tags:
+      - PKI
+  /ocsp:
+    get:
+      description: 通过序列号查询适合浏览器和运维排障使用的 OCSP 状态；服务关闭时返回 unknown 与 ocspDisabled 原因。
+      parameters:
+      - description: 证书序列号
+        in: query
+        name: serialNumber
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.ocspStatusResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 查询 OCSP 状态（JSON）
+      tags:
+      - PKI
+    post:
+      consumes:
+      - application/ocsp-request
+      description: 接收 application/ocsp-request 二进制请求，返回由签发 CA 对应的独立 OCSP Responder
+        身份签名的二进制响应；服务关闭时返回标准 unauthorized 响应。
+      parameters:
+      - description: OCSP request bytes
+        in: body
+        name: body
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/ocsp-response
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+      summary: RFC 6960 OCSP 状态响应
+      tags:
+      - PKI
+  /ocsp/{serial}:
+    get:
+      parameters:
+      - description: 证书序列号
+        in: path
+        name: serial
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.ocspStatusResponse'
+      summary: 查询 OCSP 状态（路径序列号）
+      tags:
+      - PKI
+  /ocsp/health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.ocspHealthResponse'
+      summary: 获取 OCSP 服务状态
+      tags:
+      - PKI
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

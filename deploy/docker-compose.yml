@@ -1,0 +1,41 @@
+services:
+  #  ----------------------------------------------------------------
+  # 新建 PostgreSQL 容器（使用已有容器时注释此块）
+  # -----------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: certflow-postgres
+    restart: unless-stopped
+    networks:
+      - certflow_network
+    ports:
+      - 5432:5432
+    volumes:
+      - ./PgSqlData:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      TZ: Asia/Shanghai
+
+  certflow:
+    image: registry.cn-shenzhen.aliyuncs.com/zyx3721/certflow:latest
+    container_name: certflow
+    restart: unless-stopped
+    networks:
+      - certflow_network
+    ports:
+      - 80:80
+    env_file:
+      - .env
+    volumes:
+      - ./CFData:/app/data
+    # ----------------------------------------------------------------
+    # 依赖新建容器（使用已有容器时注释此块）
+    # ----------------------------------------------------------------
+    depends_on:
+      - postgres
+
+networks:
+  certflow_network:
+    driver: bridge
