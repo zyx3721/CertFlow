@@ -23,11 +23,10 @@ func (s *Service) createRequest(ctx context.Context, in RequestInput, actor doma
 	if err := validateRequestInput(&in, subject); err != nil {
 		return domain.Certificate{}, err
 	}
-	var caType string
 	var notAfter time.Time
-	err = s.store.Pool.QueryRow(ctx, "SELECT type,not_after FROM certificate_authorities WHERE id=$1 AND status='active'", in.CAID).Scan(&caType, &notAfter)
-	if err != nil || caType != "issuing" {
-		return domain.Certificate{}, errors.New("请选择有效的签发 CA")
+	err = s.store.Pool.QueryRow(ctx, "SELECT not_after FROM certificate_authorities WHERE id=$1 AND status='active'", in.CAID).Scan(&notAfter)
+	if err != nil {
+		return domain.Certificate{}, errors.New("请选择有效的 CA")
 	}
 	requestedNotAfter := time.Now().AddDate(0, 0, in.ValidityDays)
 	if requestedNotAfter.After(notAfter) {

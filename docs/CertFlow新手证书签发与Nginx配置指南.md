@@ -1,6 +1,6 @@
 # CertFlow 新手证书签发与 Nginx 配置指南
 
-本文以内部服务 `app.example.internal` 为例，说明如何在 CertFlow 中创建内部 CA、签发服务端证书，并部署到 Nginx 反向代理。请将域名、IP、文件路径和上游端口替换为实际值。
+本文以内部服务 `app.example.internal` 为例，说明如何在 CertFlow 中创建或导入内部 CA、签发服务端证书，并部署到 Nginx 反向代理。请将域名、IP、文件路径和上游端口替换为实际值。
 
 ## 一、先理解要完成什么
 
@@ -17,7 +17,8 @@ Root CA
 
 - Root CA 是内部信任锚点，应妥善保管。
 - Intermediate CA 用于隔离 Root CA 与日常签发操作。
-- Issuing CA 专门签发业务证书；CertFlow 只允许使用有效的 Issuing CA 申请业务证书。
+- Issuing CA 用于隔离日常签发私钥，是生产环境签发业务证书的推荐选择。
+- CertFlow 允许选择任意已启用的 Root、Intermediate 或 Issuing CA 申请业务证书。若直接使用 Root 或 Intermediate CA 签发，应评估私钥使用频率、证书链长度和运维边界。
 - Nginx 向客户端发送业务证书和中间链；客户端需要单独信任 Root CA。
 
 ### 1.2 与数字证书学习笔记的关系
@@ -38,6 +39,7 @@ Root CA
 - 确保客户端通过该域名访问 Nginx；不要用未写入证书 SAN 的 IP 或域名访问。
 - 确认 Nginx 能访问上游服务，例如 `http://127.0.0.1:9000`。
 - 确认已能登录 CertFlow，并拥有 CA 管理、证书申请和审批权限。
+- 创建或导入 CA 需要 `ca.add` 权限；该权限同时隐含 `ca.read`，可查看上级 CA 并维护信任链。
 
 ### 2.2 规划有效期和 Subject
 
@@ -48,7 +50,9 @@ Root CA
 | Issuing CA | `Example Issuing CA` | `CN=Example Issuing CA,O=Example Corp,C=CN` | 短于 Intermediate CA |
 | 业务证书 | `app.example.internal` | `CN=app.example.internal,O=Example Corp,C=CN` | 短于 Issuing CA |
 
-## 三、在 CertFlow 中创建 CA
+## 三、在 CertFlow 中创建或导入 CA
+
+以下三层结构是生产环境推荐示例。若已有 CA 证书和匹配私钥，可在「CA 管理」中选择「导入 CA」替代对应创建步骤；导入同样需要 `ca.add` 权限。
 
 ### 3.1 创建 Root CA
 
@@ -68,7 +72,7 @@ Root CA
 2. 上级 CA 选择刚创建的 Intermediate CA。
 3. 到期日期必须早于或等于 Intermediate CA 的到期日期，确认创建。
 
-业务证书可选择该 Issuing CA 进行签发。
+业务证书可选择任意已启用 CA 进行签发。本示例选择 Issuing CA，以避免 Root 和 Intermediate CA 的私钥参与日常签发。
 
 ## 四、在签发前配置 CRL 与 OCSP
 
@@ -92,7 +96,7 @@ CertFlow 会在新证书中写入以下地址：
 2. 填写 Subject、通用名称和 SAN：
    - 通用名称填写 `app.example.internal`。
    - SAN 至少包含 `app.example.internal`；需要额外域名或 IP 时逐项添加。
-3. 签发 CA 选择第三章创建的 Issuing CA。
+3. 签发 CA 可选择任意已启用的 Root、Intermediate 或 Issuing CA；本示例选择第三章创建的 Issuing CA。
 4. 用途选择「服务端证书」，选择算法和有效期。
 5. CSR 来源选择「系统生成」，完成预览并提交申请。
 
@@ -106,7 +110,7 @@ CertFlow 会在新证书中写入以下地址：
 4. 解压 ZIP，通常包含：
 
 ```text
-app.example.internal_bundle.crt  # 业务证书 + 直接签发它的 Issuing CA 证书
+app.example.internal_bundle.crt  # 业务证书 + 直接签发它的 CA 证书
 app.example.internal.key         # 业务证书私钥
 ```
 
@@ -114,15 +118,21 @@ app.example.internal.key         # 业务证书私钥
 
 ### 5.3 组合 Nginx 所需的完整服务端链
 
-若 Issuing CA 的上级是 Intermediate CA，ZIP 内的 `_bundle.crt` 还缺少 Intermediate CA 证书。请在「CA 管理」下载 Intermediate CA 的 PEM 证书，并在 Nginx 服务器上组合服务端链：
+下载包内的 `_bundle.crt` 包含业务证书和直接签发它的 CA 证书。若该直接签发 CA 不是 Root CA，还需要从「CA 管理」下载其到 Root CA 之间的每张中间 CA 证书，并在 Nginx 服务器上追加这些证书：
 
 ```bash
 cat app.example.internal_bundle.crt example-intermediate-ca.pem > app.example.internal-fullchain.crt
 ```
 
-- `app.example.internal-fullchain.crt` 的顺序应为：业务证书 → Issuing CA → Intermediate CA。
+- `app.example.internal-fullchain.crt` 的顺序应为：业务证书 → 直接签发 CA → 从下至上的各级中间 CA。
 - 不要将 Root CA 放入 `ssl_certificate` 文件；Root CA 应安装到客户端受信任根证书库。
-- 若 Issuing CA 直接由 Root CA 签发，则 ZIP 中的 `_bundle.crt` 已可作为服务端链使用。
+- 若业务证书由 Root CA 直接签发，下载包仍会包含 Root CA；不要直接将该 `_bundle.crt` 用于 Nginx。使用以下命令仅提取第一个叶子证书：
+
+```bash
+awk 'BEGIN { count=0 } /-----BEGIN CERTIFICATE-----/ { count++ } count == 1 { print }' app.example.internal_bundle.crt > app.example.internal-leaf.crt
+```
+
+- 若业务证书由 Intermediate CA 直接签发，则只需追加该 Intermediate CA 的上级中间证书。
 
 ## 六、部署到 Nginx 反向代理
 
@@ -136,7 +146,7 @@ sudo install -m 600 app.example.internal.key /etc/nginx/certflow-certs/app.examp
 sudo install -m 644 app.example.internal-fullchain.crt /etc/nginx/certflow-certs/app.example.internal.crt
 ```
 
-若 Issuing CA 直接由 Root CA 签发，第三条命令中的源文件替换为 `app.example.internal_bundle.crt`。
+若业务证书由 Root CA 直接签发，第三条命令中的源文件替换为 `app.example.internal-leaf.crt`。
 
 ### 6.2 配置 HTTPS 站点
 
@@ -215,7 +225,7 @@ location = /ocsp {
 openssl s_client -connect app.example.internal:443 -servername app.example.internal -showcerts </dev/null
 ```
 
-检查输出中的证书顺序是否为业务证书、Issuing CA 和 Intermediate CA。
+检查输出中的证书顺序是否为业务证书、直接签发 CA，以及其上级的各级中间 CA；不应包含 Root CA。
 
 ### 8.2 在客户端建立信任
 
@@ -232,7 +242,7 @@ openssl s_client -connect app.example.internal:443 -servername app.example.inter
 | 浏览器提示证书颁发机构无效 | 将内部 Root CA 导入客户端受信任根证书库，并确认 Nginx 下发了完整的中间证书链 |
 | 浏览器提示域名不匹配 | 使用证书 SAN 中的域名访问；重新申请时补充正确的 DNS 名称或 IP |
 | 下载后没有 `.key` 文件 | 使用了手动 CSR；私钥仅保留在生成 CSR 的系统中，需要在那里部署 |
-| 申请时没有可选签发 CA | 先创建并启用 Issuing CA，再申请业务证书 |
+| 申请时没有可选签发 CA | 创建或导入并启用任意 CA；生产环境建议启用 Issuing CA 作为日常签发 CA |
 | CRL 或 OCSP 地址无法访问 | 在证书签发前保存正确的系统配置，并在 `pki.example.internal` 的 Nginx 中代理 `/crl/` 和 `/ocsp` |
 | Nginx 无法读取私钥 | 检查路径、运行用户权限和私钥文件权限；私钥应避免被普通用户读取 |
 

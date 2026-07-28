@@ -16,7 +16,7 @@ var BuiltinPermissions = []domain.Permission{
 	{Key: domain.PermissionDashboardRead, Name: "查看仪表盘", Description: "查看 PKI 统计、趋势和近期活动", Category: "仪表盘"},
 	{Key: domain.PermissionCARead, Name: "查看 CA", Description: "查看 CA 层级和公开证书", Category: "CA 管理"},
 	{Key: domain.PermissionCADownload, Name: "下载 CA", Description: "下载 CA 证书文件", Category: "CA 管理", ImpliedReadPermission: domain.PermissionCARead},
-	{Key: domain.PermissionCAAdd, Name: "添加 CA", Description: "创建根、中间或签发 CA", Category: "CA 管理", ImpliedReadPermission: domain.PermissionCARead},
+	{Key: domain.PermissionCAAdd, Name: "添加 CA", Description: "创建或导入根、中间或签发 CA", Category: "CA 管理", ImpliedReadPermission: domain.PermissionCARead},
 	{Key: domain.PermissionCADelete, Name: "删除 CA", Description: "删除未关联证书的 CA", Category: "CA 管理", ImpliedReadPermission: domain.PermissionCARead},
 	{Key: domain.PermissionCertificateRead, Name: "查看证书", Description: "查看证书列表和详情", Category: "证书管理"},
 	{Key: domain.PermissionCertificateRequest, Name: "申请证书", Description: "提交证书申请，需要读取可用 CA", Category: "证书管理", ImpliedReadPermission: domain.PermissionCertificateRead, ImpliedPermissions: []string{domain.PermissionCARead}},

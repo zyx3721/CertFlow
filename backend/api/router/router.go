@@ -54,6 +54,7 @@ func New(cfg config.Config, store *repository.Store, auth *authsvc.Service, pki 
 	mux.HandleFunc("GET /api/v1/auth/me", r.require(r.me))
 	mux.HandleFunc("GET /api/v1/cas", r.requirePermission(domain.PermissionCARead, r.listCAs))
 	mux.HandleFunc("POST /api/v1/cas", r.requirePermission(domain.PermissionCAAdd, r.createCA))
+	mux.HandleFunc("POST /api/v1/cas/import", r.requirePermission(domain.PermissionCAAdd, r.importCA))
 	mux.HandleFunc("GET /api/v1/cas/{id}/certificate", r.requirePermission(domain.PermissionCARead, r.caCertificate))
 	mux.HandleFunc("GET /api/v1/cas/{id}/download", r.requirePermission(domain.PermissionCADownload, r.downloadCACertificate))
 	mux.HandleFunc("GET /api/v1/cas/{id}/deletion-check", r.requirePermission(domain.PermissionCADelete, r.caDeletionCheck))

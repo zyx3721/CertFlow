@@ -187,6 +187,21 @@ func swaggerListCAs() {}
 // @Router /api/v1/cas [post]
 func swaggerCreateCA() {}
 
+// swaggerImportCA godoc
+// @Summary 导入已有 CA
+// @Description 导入已有 CA 的证书和匹配私钥。服务端校验证书用途、密钥匹配和 CA 信任链，再以应用主密钥加密存储私钥；CSR 可选且仅用于校验，不会持久化。
+// @Tags CA
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param body body importCARequest true "CA 导入参数"
+// @Success 201 {object} domain.CA
+// @Failure 400 {object} errorDocResponse
+// @Failure 401 {object} errorDocResponse
+// @Failure 403 {object} errorDocResponse
+// @Router /api/v1/cas/import [post]
+func swaggerImportCA() {}
+
 // swaggerCACertificate godoc
 // @Summary 获取 CA 证书内容
 // @Tags CA
@@ -279,7 +294,7 @@ func swaggerCertificateCSRInspect() {}
 
 // swaggerRequestCertificate godoc
 // @Summary 提交证书申请
-// @Description Subject 必须包含与通用名称一致的 CN，字段值可直接包含英文逗号；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为 1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx 申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
+// @Description 签发 CA 可选择任意已启用的 Root、Intermediate 或 Issuing CA。Subject 必须包含与通用名称一致的 CN，字段值可直接包含英文逗号；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为 1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx 申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
 // @Tags Certificates
 // @Accept json
 // @Produce json

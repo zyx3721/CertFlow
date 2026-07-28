@@ -443,6 +443,26 @@ definitions:
       time:
         type: string
     type: object
+  router.importCARequest:
+    properties:
+      certificatePEM:
+        type: string
+      csrPEM:
+        type: string
+      name:
+        example: Sunline Root CA
+        type: string
+      parentId:
+        type: string
+      privateKeyPEM:
+        type: string
+      type:
+        enum:
+        - root
+        - intermediate
+        - issuing
+        type: string
+    type: object
   router.listResponse:
     properties:
       items:
@@ -1079,6 +1099,42 @@ paths:
       summary: 下载 CA 证书（.crt）
       tags:
       - CA
+  /api/v1/cas/import:
+    post:
+      consumes:
+      - application/json
+      description: 导入已有 CA 的证书和匹配私钥。服务端校验证书用途、密钥匹配和 CA 信任链，再以应用主密钥加密存储私钥；CSR 可选且仅用于校验，不会持久化。
+      parameters:
+      - description: CA 导入参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.importCARequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.CA'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 导入已有 CA
+      tags:
+      - CA
   /api/v1/certificates:
     get:
       description: 待审批或已驳回记录的序列号为 REQ:xxxxxxxx 申请编号，指纹为 16 字节的申请材料标识；已签发、已撤销或已过期记录返回冒号分隔的实际
@@ -1106,9 +1162,10 @@ paths:
     post:
       consumes:
       - application/json
-      description: Subject 必须包含与通用名称一致的 CN，字段值可直接包含英文逗号；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为
-        1 至 7300 天，且不能超过签发 CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx
-        申请编号和计划到期时间，审批通过后将替换为实际 X.509 序列号与签发到期时间。
+      description: 签发 CA 可选择任意已启用的 Root、Intermediate 或 Issuing CA。Subject 必须包含与通用名称一致的
+        CN，字段值可直接包含英文逗号；至少提供一个 DNS 名称或 IP 地址 SAN，国家代码为可选的两位代码；有效期为 1 至 7300 天，且不能超过签发
+        CA 的到期日。系统生成模式提交 CSR 和其匹配私钥，私钥将加密保存。成功后返回 REQ:xxxxxxxx 申请编号和计划到期时间，审批通过后将替换为实际
+        X.509 序列号与签发到期时间。
       parameters:
       - description: 证书申请
         in: body

@@ -9,6 +9,7 @@ import {
   Plus,
   ShieldCheck,
   Trash2,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/confirm-dialog';
@@ -18,6 +19,7 @@ import { PageHeader } from '@/components/page-header';
 import { AppTooltip } from '@/components/app-tooltip';
 import { getStoredUser, userHasPermission } from '@/lib/auth';
 import { CAExpiryDatePicker } from './CAExpiryDatePicker';
+import { CAImportDialog } from './CAImportDialog';
 import { formatSubjectForDisplay } from './CASubjectDisplay';
 import { Button } from '@/components/ui/button';
 import {
@@ -99,6 +101,7 @@ export function CAPage() {
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: pkiQueryKeys.cas, queryFn: getCAs });
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [form, setForm] = useState<CAForm>(initialForm);
   const [deleteTarget, setDeleteTarget] = useState<CertificateAuthority | null>(null);
   const [preview, setPreview] = useState<{
@@ -278,10 +281,16 @@ export function CAPage() {
         description="管理根 CA、中间 CA 与签发 CA 的完整信任链"
         actions={
           canAddCA ? (
-            <Button className="zl-ca-create-button" onClick={() => handleCreateOpenChange(true)}>
-              <Plus size={16} />
-              新增 CA
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button className="zl-ca-import-button" onClick={() => setImportOpen(true)}>
+                <Upload size={16} />
+                导入 CA
+              </Button>
+              <Button className="zl-ca-create-button" onClick={() => handleCreateOpenChange(true)}>
+                <Plus size={16} />
+                新增 CA
+              </Button>
+            </div>
           ) : undefined
         }
       />
@@ -356,7 +365,7 @@ export function CAPage() {
                             : value.subject,
                         }))
                       }
-                      className={`rounded-xl border p-3 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 ${
+                      className={`cursor-pointer rounded-xl border p-3 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(37,99,235,0.12)] active:translate-y-0 ${
                         selected
                           ? 'border-blue-500/60 bg-blue-500/10 shadow-sm'
                           : 'border-[var(--zl-border)] bg-[var(--zl-control-bg)] hover:border-blue-500/40 hover:bg-blue-500/5'
@@ -450,11 +459,15 @@ export function CAPage() {
             </div>
           </div>
           <DialogFooter className="border-t border-[var(--zl-border)] bg-[var(--zl-control-bg-soft)]/40 px-5 py-3">
-            <Button variant="outline" onClick={() => handleCreateOpenChange(false)}>
+            <Button
+              variant="outline"
+              className="zl-ca-dialog-action"
+              onClick={() => handleCreateOpenChange(false)}
+            >
               取消
             </Button>
             <Button
-              className="zl-ca-create-button"
+              className="zl-ca-create-button zl-ca-dialog-action"
               disabled={createMutation.isPending}
               onClick={() => {
                 const caName = form.name.trim();
@@ -487,6 +500,7 @@ export function CAPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <CAImportDialog open={importOpen} items={items} onOpenChange={setImportOpen} />
 
       {preview ? (
         <Dialog open onOpenChange={open => !open && setPreview(null)}>

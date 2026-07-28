@@ -93,6 +93,15 @@ type createCARequest struct {
 	NotAfter  time.Time `json:"notAfter"`
 }
 
+type importCARequest struct {
+	Name           string `json:"name" example:"Sunline Root CA"`
+	Type           string `json:"type" enums:"root,intermediate,issuing"`
+	ParentID       string `json:"parentId,omitempty"`
+	CertificatePEM string `json:"certificatePEM"`
+	PrivateKeyPEM  string `json:"privateKeyPEM"`
+	CSRPEM         string `json:"csrPEM,omitempty"`
+}
+
 type certificateRequest struct {
 	CAID          string   `json:"caID"`
 	CommonName    string   `json:"commonName"`

@@ -151,6 +151,15 @@ export const createCA = (body: {
   notAfter: string;
 }) => api<CertificateAuthority>('/api/v1/cas', { method: 'POST', body: JSON.stringify(body) });
 
+export const importCA = (body: {
+  name: string;
+  type: CAType;
+  parentId: string;
+  certificatePEM: string;
+  privateKeyPEM: string;
+  csrPEM?: string;
+}) => api<CertificateAuthority>('/api/v1/cas/import', { method: 'POST', body: JSON.stringify(body) });
+
 export const deleteCA = (id: string) =>
   api<void>(`/api/v1/cas/${encodeURIComponent(id)}`, { method: 'DELETE' });
 

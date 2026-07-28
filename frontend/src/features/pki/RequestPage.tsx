@@ -59,11 +59,8 @@ export function RequestPage() {
   usePageRefresh(requestKeys);
   const queryClient = useQueryClient();
   const caQuery = useQuery({ queryKey: pkiQueryKeys.cas, queryFn: getCAs });
-  const issuingCAs = useMemo(
-    () =>
-      (caQuery.data?.items ?? []).filter(
-        item => item.type === 'issuing' && item.status === 'active'
-      ),
+  const activeCAs = useMemo(
+    () => (caQuery.data?.items ?? []).filter(item => item.status === 'active'),
     [caQuery.data?.items]
   );
   const [step, setStep] = useState<Step>(1);
@@ -84,9 +81,9 @@ export function RequestPage() {
   const manualCSRParseSequence = useRef(0);
 
   useEffect(() => {
-    if (issuingCAs.length === 0) return;
-    setCAID(current => (issuingCAs.some(item => item.id === current) ? current : issuingCAs[0].id));
-  }, [issuingCAs]);
+    if (activeCAs.length === 0) return;
+    setCAID(current => (activeCAs.some(item => item.id === current) ? current : activeCAs[0].id));
+  }, [activeCAs]);
 
   const sanValues = useMemo(
     () =>
@@ -112,8 +109,8 @@ export function RequestPage() {
     [subject]
   );
   const selectedCA = useMemo(
-    () => issuingCAs.find(item => item.id === caID),
-    [caID, issuingCAs]
+    () => activeCAs.find(item => item.id === caID),
+    [activeCAs, caID]
   );
   const requestedValidityDays = useMemo(() => {
     return calculateValidityDays(validityOption, customValidityValue, customValidityUnit);
@@ -439,7 +436,7 @@ export function RequestPage() {
                 <div className="mt-4 space-y-3">
                   <label className="block text-xs font-medium text-[var(--zl-text)]">
                     上传 CSR 文件
-                    <span className="mt-1.5 flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-[var(--zl-border)] bg-[var(--zl-control-bg)] px-3 py-2 text-[var(--zl-text-muted)] transition-colors hover:border-blue-500/50 hover:text-blue-500">
+                    <span className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-solid border-blue-500/30 bg-[var(--zl-control-bg)] px-3 py-2 text-[var(--zl-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors hover:border-blue-500/60 hover:text-blue-500">
                       <Upload size={14} />
                       选择 .csr、.pem 或 .txt 文件
                       <input
@@ -470,7 +467,7 @@ export function RequestPage() {
                     <SelectValue placeholder="选择签发 CA" />
                   </SelectTrigger>
                   <SelectContent>
-                    {issuingCAs.map(item => (
+                    {activeCAs.map(item => (
                       <SelectItem key={item.id} value={item.id} className="font-normal">
                         {item.name}
                       </SelectItem>
@@ -501,16 +498,16 @@ export function RequestPage() {
               </Field>
             </div>
 
-            {issuingCAs.length === 0 && !caQuery.isLoading ? (
+            {activeCAs.length === 0 && !caQuery.isLoading ? (
               <p className="mt-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-600 dark:text-amber-400">
-                当前没有可用签发 CA，请先在 CA 管理中创建
+                当前没有可用 CA，请先在 CA 管理中创建或启用
               </p>
             ) : null}
             <div className="mt-5 flex justify-end border-t border-[var(--zl-border)] pt-4">
               <Button
                 type="button"
                 onClick={() => void goNext()}
-                disabled={issuingCAs.length === 0 || isGeneratingCSR}
+                disabled={activeCAs.length === 0 || isGeneratingCSR}
               >
                 {isGeneratingCSR ? '正在生成 CSR...' : '下一步'}
                 <ArrowRight size={15} />
