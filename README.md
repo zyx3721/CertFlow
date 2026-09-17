@@ -201,7 +201,7 @@ SESSION_IDLE_TIMEOUT_HOURS=12
 PKI_KEY_ENCRYPTION_KEY=
 ```
 
-**配置参数说明详情见 [6.8](#68-后端配置)。**
+**配置参数说明详情见 [5.5](#55-后端配置)。**
 
 3. 运行后端服务：
 
@@ -318,7 +318,7 @@ SESSION_IDLE_TIMEOUT_HOURS=12
 PKI_KEY_ENCRYPTION_KEY=
 ```
 
-**配置参数说明详情见 [6.8](#68-后端配置)。**
+**配置参数说明详情见 [5.5](#55-后端配置)。**
 
 ## 3.3 构建镜像（可选）
 
@@ -537,7 +537,7 @@ SESSION_IDLE_TIMEOUT_HOURS=12
 PKI_KEY_ENCRYPTION_KEY=
 ```
 
-**配置参数说明详情见 [6.8](#68-后端配置)。**
+**配置参数说明详情见 [5.5](#55-后端配置)。**
 
 3. 构建后端可执行文件：
 
@@ -596,7 +596,7 @@ npm install
 
 2. 构建前端项目：
 
-```
+```bash
 npm run build
 ```
 
