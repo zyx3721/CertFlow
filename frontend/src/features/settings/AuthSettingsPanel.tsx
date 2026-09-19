@@ -341,9 +341,9 @@ function LDAPSettingsPanel({ canManage, onSaved }: { canManage: boolean; onSaved
           disabledText="关闭后不会显示在登录页"
         />
         <ConfigField
-          field={{ key: 'name', label: '显示名称', required: true }}
+          field={{ key: 'name', label: '显示名称' }}
           value={name}
-          disabled={!canManage}
+          disabled={true}
           onChange={value => {
             setName(String(value ?? ''));
             setClearRequested(false);
