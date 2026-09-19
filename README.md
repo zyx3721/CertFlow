@@ -168,7 +168,7 @@ npm run dev
 
 ## 部署
 
-只保留两种方式：**Docker Compose 部署**（推荐）与 **Release 二进制部署**。完整过程化步骤（含宿主机 Nginx HTTP/HTTPS 示例）见 [docs/README.md](docs/README.md)。
+只保留两种方式：**Docker Compose 部署**（推荐）与 **Release 二进制部署**。完整过程化步骤（含宿主机 Nginx HTTP/HTTPS 示例）见 [docs/manual.md](docs/manual.md)。
 
 ### 方式一：Docker Compose 部署
 
@@ -181,7 +181,7 @@ cp .env.example .env && vim .env    # 配置数据库与 JWT_SECRET、PKI_KEY_EN
 docker compose up -d
 ```
 
-`.env` 关键项（完整参数见 [docs/README.md](docs/README.md) 5.5 节）：
+`.env` 关键项（完整参数见 [docs/manual.md](docs/manual.md) 5.5 节）：
 
 | 变量 | 说明 |
 | --- | --- |
@@ -356,7 +356,7 @@ server {
 }
 ```
 
-前端必须经 `node .output/server/index.mjs` 提供 SSR；**只把 `.output/public` 配成静态根目录会导致服务端渲染页面无法返回**。含 HTTPS 与 80→443 跳转的完整示例见 [docs/README.md](docs/README.md) 4.4 节。
+前端必须经 `node .output/server/index.mjs` 提供 SSR；**只把 `.output/public` 配成静态根目录会导致服务端渲染页面无法返回**。含 HTTPS 与 80→443 跳转的完整示例见 [docs/manual.md](docs/manual.md) 4.4 节。
 
 **6. 访问**
 
@@ -398,7 +398,7 @@ Bearer Token 逐接口校验 27 项权限，无权限 403
 
 - **先改默认密码** — 首次部署后立即修改 `admin` 的默认口令。
 - **显式设置两个密钥** — `JWT_SECRET` 未设置时后端仅生成进程内临时密钥，重启即全体会话失效；`PKI_KEY_ENCRYPTION_KEY` 错误或缺失时后端拒绝启动，且它加密的私钥无法恢复，务必妥善备份。
-- **启用 HTTPS** — 生产环境通过 Nginx 配置证书，完整示例见 [docs/README.md](docs/README.md) 4.4.2 节。
+- **启用 HTTPS** — 生产环境通过 Nginx 配置证书，完整示例见 [docs/manual.md](docs/manual.md) 4.4.2 节。
 - **收紧跨域** — 生产环境按需配置 `CORS_ORIGIN`，不要保留 `*`。
 - **私钥边界** — 私钥不出现在 CA 或证书列表 API；下载必须使用专用、授权的下载接口，且审计留痕。
 - **认证安全** — LDAP Bind Password、SMTP Password 与企业微信 Secret（直连应用 Secret、统一认证中心应用 Secret）同主密钥加密保存，API 只回显是否已配置；企微授权 state 以会话密钥 HMAC-SHA256 签名（默认 5 分钟、1-60 分钟可调），统一认证中心 ticket 取出即删、HMAC 签名 + 时间戳窗口校验。
@@ -424,7 +424,7 @@ Bearer Token 逐接口校验 27 项权限，无权限 403
 }
 ```
 
-按模块分组的完整接口清单（健康检查、身份认证、找回密码、CA、证书、CRL、审批、审计、系统配置、公开 PKI 服务）见 [docs/README.md](docs/README.md) 的《七、API 文档》。
+按模块分组的完整接口清单（健康检查、身份认证、找回密码、CA、证书、CRL、审批、审计、系统配置、公开 PKI 服务）见 [docs/manual.md](docs/manual.md) 的《七、API 文档》。
 
 修改接口后，在 `backend/` 目录执行以下命令同步 Swagger 产物：
 
@@ -443,7 +443,7 @@ PostgreSQL 数据库，共 20 张表，由嵌入式迁移按文件名顺序创�
 | 系统与配置 | `system_settings`、`auth_provider_settings`、`notification_channel_settings`、`certificate_expiry_notifications` |
 | 审计与找回密码 | `audit_entries`、`password_reset_requests` |
 
-每张表的字段与用途见 [docs/README.md](docs/README.md) 的 `001_init.sql` 相关章节。
+每张表的字段与用途见 [docs/manual.md](docs/manual.md) 的 `001_init.sql` 相关章节。
 
 ## 常见问题
 
@@ -477,7 +477,7 @@ psql -Upostgres -d certflow -c 'UPDATE users SET password_hash = ''$2a$10$y6sEol
 
 因为控制台是 TanStack Start + Nitro 的 SSR 应用，页面由 `node .output/server/index.mjs` 返回，静态目录只提供 `/assets/` 等资源。
 
-其余部署细节见 [docs/README.md](docs/README.md) 与 [新手证书签发与 Nginx 配置指南](docs/CertFlow新手证书签发与Nginx配置指南.md)。
+其余部署细节见 [docs/manual.md](docs/manual.md) 与 [新手证书签发与 Nginx 配置指南](docs/CertFlow新手证书签发与Nginx配置指南.md)。
 
 ## 项目结构
 
@@ -507,7 +507,7 @@ CertFlow/
 ├── LICENSE
 ├── README.md                中文说明（本文件）
 ├── README.en.md             English
-└── docs/README.md           完整版说明（含全量接口清单、Nginx 与 HTTPS 示例）
+└── docs/manual.md           完整版说明（含全量接口清单、Nginx 与 HTTPS 示例）
 ```
 
 ## 文档
@@ -517,7 +517,7 @@ CertFlow/
 | [快速开始](#快速开始) | 本地起后端与前端，默认账号与端口 |
 | [部署](#部署) | Docker Compose 与 Release 二进制两条路径、环境变量、反向代理 |
 | [权限模型](#权限模型) | 27 项权限怎么分组、内置角色各有什么 |
-| [完整版说明](docs/README.md) | 全量接口清单、Nginx 与 HTTPS 完整示例、环境变量明细 |
+| [完整版说明](docs/manual.md) | 全量接口清单、Nginx 与 HTTPS 完整示例、环境变量明细 |
 | [新手指南](docs/CertFlow新手证书签发与Nginx配置指南.md) | 从创建内部 CA 到签发业务证书并部署 Nginx HTTPS |
 | [English README](README.en.md) | 同样的内容，英文版 |
 

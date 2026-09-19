@@ -168,7 +168,7 @@ Open `http://localhost:5173`, sign in with `admin / 123456`, and **change the pa
 
 ## Deployment
 
-Only two paths are documented: **Docker Compose** (recommended) and **Release binaries**. The full step-by-step procedures (host Nginx HTTP/HTTPS examples) live in [docs/README.md](docs/README.md).
+Only two paths are documented: **Docker Compose** (recommended) and **Release binaries**. The full step-by-step procedures (host Nginx HTTP/HTTPS examples) live in [docs/manual.md](docs/manual.md).
 
 ### Option 1: Docker Compose
 
@@ -181,7 +181,7 @@ cp .env.example .env && vim .env    # configure database, JWT_SECRET and PKI_KEY
 docker compose up -d
 ```
 
-Key `.env` entries (full list in [docs/README.md](docs/README.md), section 5.5):
+Key `.env` entries (full list in [docs/manual.md](docs/manual.md), section 5.5):
 
 | Variable | Purpose |
 | --- | --- |
@@ -356,7 +356,7 @@ server {
 }
 ```
 
-The frontend must be served by `node .output/server/index.mjs`; **pointing Nginx at `.output/public` only will break server-rendered pages**. Full examples with HTTPS and 80→443 redirection are in [docs/README.md](docs/README.md), section 4.4.
+The frontend must be served by `node .output/server/index.mjs`; **pointing Nginx at `.output/public` only will break server-rendered pages**. Full examples with HTTPS and 80→443 redirection are in [docs/manual.md](docs/manual.md), section 4.4.
 
 **6. Access**
 
@@ -398,7 +398,7 @@ No tokens / passwords / real hostnames committed to the repository
 
 - **Change the default password first** — Update the `admin` password immediately after the first deployment.
 - **Set both keys explicitly** — Without `JWT_SECRET` the backend only generates a per-process temporary key that invalidates all sessions on restart; a wrong or missing `PKI_KEY_ENCRYPTION_KEY` prevents startup, and keys encrypted with it cannot be recovered — back it up.
-- **Enable HTTPS** — Terminate TLS on Nginx in production; see [docs/README.md](docs/README.md) section 4.4.2.
+- **Enable HTTPS** — Terminate TLS on Nginx in production; see [docs/manual.md](docs/manual.md) section 4.4.2.
 - **Tighten CORS** — Configure `CORS_ORIGIN` per environment; do not keep `*`.
 - **Private key boundary** — Private keys never appear in CA or certificate list APIs; downloads go through dedicated authorized endpoints and are audited.
 - **Authentication security** — LDAP bind passwords, SMTP passwords and WeCom secrets (direct app secret, auth-center app secret) share the master-key encryption and are never echoed; WeCom OAuth states are HMAC-SHA256 signed with the session secret (default 5 minutes, adjustable 1-60); auth-center tickets are single-use and verified via HMAC signature plus a timestamp window.
@@ -424,7 +424,7 @@ Login request example:
 }
 ```
 
-The full endpoint list grouped by module (health, authentication, password reset, CAs, certificates, CRL, approvals, audit, system settings, public PKI) is available in [docs/README.md](docs/README.md), chapter "API docs".
+The full endpoint list grouped by module (health, authentication, password reset, CAs, certificates, CRL, approvals, audit, system settings, public PKI) is available in [docs/manual.md](docs/manual.md), chapter "API docs".
 
 After changing an endpoint, regenerate the Swagger artifacts inside `backend/`:
 
@@ -443,7 +443,7 @@ A PostgreSQL database with 20 tables, created by embedded migrations in filename
 | System & settings | `system_settings`, `auth_provider_settings`, `notification_channel_settings`, `certificate_expiry_notifications` |
 | Audit & password reset | `audit_entries`, `password_reset_requests` |
 
-Column-level details are described in [docs/README.md](docs/README.md) alongside the `001_init.sql` schema.
+Column-level details are described in [docs/manual.md](docs/manual.md) alongside the `001_init.sql` schema.
 
 ## FAQ
 
@@ -477,7 +477,7 @@ Yes. Stop the service and use `pg_dump` / `pg_restore` (or `CREATE DATABASE ... 
 
 The console is a TanStack Start + Nitro SSR application — pages are rendered by `node .output/server/index.mjs`; the static directory only serves `/assets/` and similar resources.
 
-For everything else, see [docs/README.md](docs/README.md) and the [beginner's guide](docs/CertFlow新手证书签发与Nginx配置指南.md).
+For everything else, see [docs/manual.md](docs/manual.md) and the [beginner's guide](docs/CertFlow新手证书签发与Nginx配置指南.md).
 
 ## Repository layout
 
@@ -507,7 +507,7 @@ CertFlow/
 ├── LICENSE
 ├── README.md                Chinese readme (this repo's main readme)
 ├── README.en.md             English
-└── docs/README.md           Full documentation (complete endpoint list, Nginx and HTTPS examples)
+└── docs/manual.md           Full documentation (complete endpoint list, Nginx and HTTPS examples)
 ```
 
 ## Docs
@@ -517,7 +517,7 @@ CertFlow/
 | [Quick start](#quick-start) | Run the backend and frontend locally, default account and ports |
 | [Deployment](#deployment) | Docker Compose and Release binaries, environment variables, reverse proxy |
 | [Permission model](#permission-model) | How the 27 permissions are grouped, what built-in roles get |
-| [Full documentation](docs/README.md) | Complete endpoint list, full Nginx and HTTPS examples, environment variables |
+| [Full documentation](docs/manual.md) | Complete endpoint list, full Nginx and HTTPS examples, environment variables |
 | [Beginner's guide](docs/CertFlow新手证书签发与Nginx配置指南.md) | From creating an internal CA to issuing certificates behind Nginx HTTPS |
 | [中文 README](README.md) | The same content in Chinese |
 
