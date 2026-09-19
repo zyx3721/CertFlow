@@ -308,7 +308,7 @@ export function WeComSettingsPanel({
             </div>
           ))}
         </div>
-        <p className="rounded-lg border border-[var(--zl-border)] bg-white/[0.026] p-3 text-xs leading-5 text-[var(--zl-text-muted)]">
+        <p className="rounded-lg border border-[var(--zl-border)] bg-[var(--zl-control-bg-soft)] p-3 text-xs leading-5 text-[var(--zl-text-muted)]">
           {authMode === 'sso' ? ssoGuidance : directGuidance}
         </p>
       </div>

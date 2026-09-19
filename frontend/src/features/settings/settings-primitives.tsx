@@ -267,7 +267,6 @@ export function ConfigField({
             <AppTooltip label={passwordVisible ? '隐藏密码' : '显示密码'} placement="top">
               <button
                 type="button"
-                disabled={disabled || String(value ?? '') === ''}
                 onClick={event => {
                   event.preventDefault();
                   setPasswordVisible(current => !current);
