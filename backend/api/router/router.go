@@ -49,7 +49,6 @@ func New(cfg config.Config, store *repository.Store, auth *authsvc.Service, pki 
 	mux.HandleFunc("POST /api/v1/auth/wecom/callback", r.wecomCallback)
 	mux.HandleFunc("POST /api/v1/auth/wecom/sso/callback", r.wecomSSOCallback)
 	mux.HandleFunc("GET /api/v1/auth/wecom/bind-url", r.require(r.wecomBindURL))
-	mux.HandleFunc("GET /api/v1/auth/wecom/binding", r.require(r.wecomBinding))
 	mux.HandleFunc("POST /api/v1/auth/wecom/bind", r.require(r.wecomBind))
 	mux.HandleFunc("POST /api/v1/auth/wecom/sso/bind", r.require(r.wecomSSOBind))
 	mux.HandleFunc("DELETE /api/v1/auth/wecom/bind", r.require(r.wecomUnbind))

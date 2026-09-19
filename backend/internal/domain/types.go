@@ -13,6 +13,7 @@ type User struct {
 	Roles                  []Role     `json:"roles"`
 	DirectRoles            []Role     `json:"directRoles"`
 	Disabled               bool       `json:"disabled"`
+	WecomBound             bool       `json:"wecomBound"`
 	LastLoginAt            *time.Time `json:"lastLoginAt,omitempty"`
 	CreatedAt              time.Time  `json:"createdAt"`
 	UpdatedAt              time.Time  `json:"updatedAt"`

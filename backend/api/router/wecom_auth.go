@@ -161,23 +161,6 @@ func (r *Router) wecomBindURL(w http.ResponseWriter, q *http.Request) {
 	write(w, http.StatusOK, wecomAuthorizeResponse{URL: url})
 }
 
-// swaggerWecomBinding godoc
-// @Summary 查询当前用户的企业微信绑定状态
-// @Tags Auth
-// @Produce json
-// @Success 200 {object} wecomBindingResponse
-// @Failure 500 {object} errorDocResponse
-// @Security BearerAuth
-// @Router /api/v1/auth/wecom/binding [get]
-func (r *Router) wecomBinding(w http.ResponseWriter, q *http.Request) {
-	userid, bound, err := r.auth.WecomBindingOf(q.Context(), current(q))
-	if err != nil {
-		write(w, http.StatusInternalServerError, map[string]string{"message": "读取企业微信绑定状态失败"})
-		return
-	}
-	write(w, http.StatusOK, wecomBindingResponse{Bound: bound, WecomUserid: userid})
-}
-
 // swaggerWecomBind godoc
 // @Summary 绑定企业微信
 // @Description 直连模式：校验绑定 state 并用授权码换取企微 userid 后绑定到当前用户。

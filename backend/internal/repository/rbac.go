@@ -212,6 +212,9 @@ func (s *Store) AttachUserAccess(ctx context.Context, user domain.User) (domain.
 	user.DirectRoles = direct
 	user.Roles = effective
 	user.Permissions = uniquePermissions(effective)
+	if err := s.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM user_wecom_bindings WHERE user_id=$1)", user.ID).Scan(&user.WecomBound); err != nil {
+		return domain.User{}, err
+	}
 	return user, nil
 }
 

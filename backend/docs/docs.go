@@ -477,36 +477,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/v1/auth/wecom/binding": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "查询当前用户的企业微信绑定状态",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/router.wecomBindingResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/router.errorDocResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/api/v1/auth/wecom/callback": {
             "post": {
                 "description": "直连模式：校验 state 并用授权码换取企微 userid，仅允许已绑定平台用户的企业微信账号登录。",
@@ -3446,6 +3416,9 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                },
+                "wecomBound": {
+                    "type": "boolean"
                 }
             }
         },

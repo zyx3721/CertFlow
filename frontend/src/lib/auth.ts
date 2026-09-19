@@ -3,6 +3,7 @@ const USER_KEY = 'certflow.auth.user';
 const EXPIRES_AT_KEY = 'certflow.auth.expires_at';
 export const AUTH_SESSION_CHANGED_EVENT = 'certflow:auth-session-changed';
 export const WECOM_BIND_RESULT_EVENT = 'certflow:wecom-bind-result';
+export const WECOM_PROVIDERS_CHANGED_EVENT = 'certflow:wecom-providers-changed';
 
 export type AuthUser = {
   id: string;
@@ -11,6 +12,7 @@ export type AuthUser = {
   displayName: string;
   role: string;
   source: 'local' | 'ldap';
+  wecomBound?: boolean;
   permissions: string[];
 };
 
@@ -173,8 +175,12 @@ export async function login(username: string, password: string, provider = 'loca
   return session;
 }
 
-export function fetchPublicAuthProviders() {
-  if (cachedPublicAuthProviders && cachedPublicAuthProviders.expiresAt > Date.now()) {
+export function fetchPublicAuthProviders(options: { force?: boolean } = {}) {
+  if (
+    !options.force &&
+    cachedPublicAuthProviders &&
+    cachedPublicAuthProviders.expiresAt > Date.now()
+  ) {
     return Promise.resolve(cachedPublicAuthProviders.value);
   }
   if (pendingPublicAuthProviders) return pendingPublicAuthProviders;
@@ -199,8 +205,8 @@ export function invalidatePublicAuthConfiguration() {
   cachedPublicAuthProviders = null;
 }
 
-export function fetchCurrentUser() {
-  if (cachedCurrentUser && cachedCurrentUser.expiresAt > Date.now()) {
+export function fetchCurrentUser(options: { force?: boolean } = {}) {
+  if (!options.force && cachedCurrentUser && cachedCurrentUser.expiresAt > Date.now()) {
     return Promise.resolve(cachedCurrentUser.user);
   }
   if (pendingCurrentUser) return pendingCurrentUser;
@@ -321,12 +327,6 @@ export const fetchWecomAuthorizeUrl = () =>
 
 export const fetchWecomBindUrl = () =>
   api<WecomAuthorizeResponse>('/api/v1/auth/wecom/bind-url', {
-    auth: false,
-    headers: manualAuthHeaders(),
-  });
-
-export const fetchWecomBinding = () =>
-  api<WecomBinding>('/api/v1/auth/wecom/binding', {
     auth: false,
     headers: manualAuthHeaders(),
   });

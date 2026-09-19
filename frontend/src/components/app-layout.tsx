@@ -10,6 +10,7 @@ import {
   KeyRound,
   Landmark,
   LayoutDashboard,
+  Link2,
   LogOut,
   Moon,
   PanelLeftClose,
@@ -25,17 +26,22 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppTooltip } from '@/components/app-tooltip';
 import { PasswordDialog } from '@/components/password-dialog';
-import { WecomBindingMenuItems } from '@/features/auth/WecomBindingMenu';
 import { useBrandSettings } from '@/lib/branding';
 import { NotificationCenter } from '@/components/notification-center';
 import {
   AUTH_SESSION_CHANGED_EVENT,
   clearSession,
   fetchCurrentUser,
+  fetchPublicAuthProviders,
+  fetchWecomBindUrl,
   getAuthToken,
   getStoredUser,
   logout,
+  setCurrentUserSnapshot,
+  unbindWecom,
   userHasAnyPermission,
+  WECOM_BIND_RESULT_EVENT,
+  WECOM_PROVIDERS_CHANGED_EVENT,
 } from '@/lib/auth';
 import {
   applyZlTheme,
@@ -177,6 +183,7 @@ export function AppLayout() {
   const brand = useBrandSettings();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
+  const [wecomEnabled, setWecomEnabled] = useState(false);
   const [transitioningTo, setTransitioningTo] = useState('');
   const userMenuRef = useRef<HTMLDivElement | null>(null);
   const mainContentRef = useRef<HTMLElement | null>(null);
@@ -202,6 +209,75 @@ export function AppLayout() {
     window.addEventListener(AUTH_SESSION_CHANGED_EVENT, sync);
     return () => window.removeEventListener(AUTH_SESSION_CHANGED_EVENT, sync);
   }, []);
+
+  useEffect(() => {
+    const refreshWecomEnabled = () => {
+      fetchPublicAuthProviders({ force: true })
+        .then(response =>
+          setWecomEnabled(response.items.some(item => item.enabled && item.type === 'wecom'))
+        )
+        .catch(() => undefined);
+    };
+    let cancelled = false;
+    fetchPublicAuthProviders()
+      .then(response => {
+        if (cancelled) return;
+        setWecomEnabled(response.items.some(item => item.enabled && item.type === 'wecom'));
+      })
+      .catch(() => undefined);
+    window.addEventListener(WECOM_PROVIDERS_CHANGED_EVENT, refreshWecomEnabled);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(WECOM_PROVIDERS_CHANGED_EVENT, refreshWecomEnabled);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const data = event.data as { type?: string; ok?: boolean; message?: string } | null;
+      if (data?.type !== WECOM_BIND_RESULT_EVENT) return;
+      if (data.ok) {
+        toast.success('企业微信绑定成功');
+      } else {
+        toast.error(String(data.message || '企业微信绑定失败'));
+      }
+      void fetchCurrentUser({ force: true })
+        .then(fresh => {
+          setCurrentUserSnapshot(fresh);
+          setUser(fresh);
+        })
+        .catch(() => undefined);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
+
+  async function startWecomBind() {
+    setUserMenuOpen(false);
+    try {
+      const { url } = await fetchWecomBindUrl();
+      const popup = window.open(url, 'certflow-wecom-bind', 'width=680,height=680');
+      if (!popup) {
+        toast.error('浏览器拦截了绑定窗口，请允许弹窗后重试');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '获取企业微信绑定地址失败');
+    }
+  }
+
+  async function handleUnbindWecom() {
+    setUserMenuOpen(false);
+    try {
+      await unbindWecom();
+      toast.success('已解绑企业微信');
+      const fresh = await fetchCurrentUser({ force: true });
+      setCurrentUserSnapshot(fresh);
+      setUser(fresh);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '解绑企业微信失败');
+    }
+  }
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
@@ -489,7 +565,6 @@ export function AppLayout() {
                     boxShadow: 'var(--zl-menu-shadow)',
                   }}
                 >
-                  <WecomBindingMenuItems closeMenu={() => setUserMenuOpen(false)} />
                   <button
                     type="button"
                     role="menuitem"
@@ -502,6 +577,23 @@ export function AppLayout() {
                     <KeyRound size={16} />
                     修改密码
                   </button>
+                  {wecomEnabled ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="zl-menu-action-item flex h-10 w-full items-center gap-2 rounded-lg px-3 text-sm"
+                      onClick={() => {
+                        if (user?.wecomBound) {
+                          void handleUnbindWecom();
+                          return;
+                        }
+                        void startWecomBind();
+                      }}
+                    >
+                      <Link2 size={16} />
+                      {user?.wecomBound ? '解绑企微' : '绑定企微'}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     role="menuitem"

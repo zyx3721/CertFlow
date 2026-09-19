@@ -1,7 +1,7 @@
 import { MessageCircle, Save, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { invalidatePublicAuthConfiguration } from '@/lib/auth';
+import { invalidatePublicAuthConfiguration, WECOM_PROVIDERS_CHANGED_EVENT } from '@/lib/auth';
 import { fetchWecomProvider, saveWecomProvider } from '@/lib/system-settings';
 import {
   ActionButton,
@@ -206,6 +206,7 @@ export function WeComSettingsPanel({
       setForm({ ...defaultForm, ...saved.config });
       setClearRequested(false);
       invalidatePublicAuthConfiguration();
+      window.dispatchEvent(new Event(WECOM_PROVIDERS_CHANGED_EVENT));
       onSaved?.();
       toast.success('企业微信认证配置已保存');
     } catch (err) {
