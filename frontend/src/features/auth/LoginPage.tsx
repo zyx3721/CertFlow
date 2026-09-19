@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Eye, EyeOff, Loader2, Lock, Moon, QrCode, Sun, User } from 'lucide-react';
-import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { AppTooltip } from '@/components/app-tooltip';
@@ -36,28 +36,6 @@ import {
   type ZlTheme,
 } from '@/lib/utils';
 
-type WecomCallbackParams = { code: string; state: string; ticket: string };
-
-// 一次性授权参数只读取一次并立即从地址栏清除，防止刷新或回退重放
-function readWecomCallbackParams(): WecomCallbackParams | null {
-  if (typeof window === 'undefined') return null;
-  const search = new URLSearchParams(window.location.search);
-  const code = search.get('code') ?? '';
-  const state = search.get('state') ?? '';
-  const ticket = search.get('ticket') ?? '';
-  if (!ticket && (!code || !state)) return null;
-  search.delete('code');
-  search.delete('state');
-  search.delete('ticket');
-  const query = search.toString();
-  window.history.replaceState(
-    null,
-    '',
-    window.location.pathname + (query ? `?${query}` : '') + window.location.hash
-  );
-  return { code, state, ticket };
-}
-
 export function LoginPage() {
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
@@ -68,11 +46,20 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<ZlTheme>(getInitialZlTheme);
-  const [wecomLoading, setWecomLoading] = useState(false);
-  const [wecomParams] = useState<WecomCallbackParams | null>(readWecomCallbackParams);
-  const wecomProcessed = useRef(false);
   const brand = useBrandSettings();
   const toggleLabel = theme === 'dark' ? '切换浅色背景' : '切换深色背景';
+  const [callbackParams] = useState(() => {
+    const params = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+    return {
+      code: params.get('code') ?? '',
+      state: params.get('state') ?? '',
+      ticket: params.get('ticket') ?? '',
+    };
+  });
+  const isDirectCallback = Boolean(callbackParams.code && callbackParams.state);
+  const isSSOCallback = Boolean(callbackParams.ticket);
+  const isCallbackView = isDirectCallback || isSSOCallback;
+  const isWecomProvider = provider === 'wecom';
 
   useEffect(() => {
     applyZlTheme(theme);
@@ -80,9 +67,7 @@ export function LoginPage() {
   }, [theme]);
 
   useEffect(() => {
-    if (wecomParams) {
-      return;
-    }
+    if (isCallbackView) return;
     let cancelled = false;
     if (getAuthToken()) {
       void fetchCurrentUser()
@@ -96,7 +81,7 @@ export function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, wecomParams]);
+  }, [isCallbackView, navigate]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,67 +105,78 @@ export function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!wecomParams || wecomProcessed.current) return;
-    wecomProcessed.current = true;
-    void handleWecomCallback(wecomParams);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wecomParams]);
-
-  async function handleWecomCallback(params: WecomCallbackParams) {
-    setWecomLoading(true);
-    setError('');
-    const isBind = Boolean(getAuthToken());
-    try {
-      if (isBind) {
-        const binding = params.ticket
-          ? await wecomBindByTicket({ ticket: params.ticket })
-          : await wecomBindByCode({ code: params.code, state: params.state });
-        if (!binding.bound) {
-          throw new Error('企业微信账号绑定失败');
+    if (!isCallbackView) return;
+    let cancelled = false;
+    setLoading(true);
+    (async () => {
+      try {
+        if (getAuthToken()) {
+          const binding = isSSOCallback
+            ? await wecomBindByTicket({ ticket: callbackParams.ticket })
+            : await wecomBindByCode({ code: callbackParams.code, state: callbackParams.state });
+          if (!binding.bound) {
+            throw new Error('企业微信账号绑定失败');
+          }
+          window.opener?.postMessage(
+            { type: WECOM_BIND_RESULT_EVENT, ok: true },
+            window.location.origin
+          );
+          toast.success('企业微信绑定成功');
+          window.history.replaceState({}, '', window.location.pathname);
+          window.setTimeout(() => window.close(), 300);
+          return;
         }
-        window.opener?.postMessage(
-          { type: WECOM_BIND_RESULT_EVENT, ok: true },
-          window.location.origin
-        );
-        toast.success('企业微信绑定成功');
-        window.close();
+        const session = isSSOCallback
+          ? await wecomLoginByTicket({ ticket: callbackParams.ticket })
+          : await wecomLoginByCode({ code: callbackParams.code, state: callbackParams.state });
+        if (cancelled) return;
+        persistSession(session);
+        setCurrentUserSnapshot(session.user);
+        toast.success(`欢迎回来，${session.user.displayName || session.user.username}`);
+        window.history.replaceState({}, '', window.location.pathname);
+        void navigate({ to: '/', replace: true });
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '企业微信登录失败，请稍后重试';
+        if (!cancelled) setError(message);
+        if (getAuthToken()) {
+          window.opener?.postMessage(
+            { type: WECOM_BIND_RESULT_EVENT, ok: false, message },
+            window.location.origin
+          );
+          if (window.opener) {
+            window.setTimeout(() => window.close(), 1500);
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCallbackView, isSSOCallback, navigate]);
+
+  useEffect(() => {
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      if (isCallbackView) {
+        window.location.replace('/login');
         return;
       }
-      const session = params.ticket
-        ? await wecomLoginByTicket({ ticket: params.ticket })
-        : await wecomLoginByCode({ code: params.code, state: params.state });
-      persistSession(session);
-      setCurrentUserSnapshot(session.user);
-      toast.success(`欢迎回来，${session.user.displayName || session.user.username}`);
-      void navigate({ to: '/', replace: true });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : '企业微信登录失败，请稍后重试';
-      if (isBind) {
-        window.opener?.postMessage(
-          { type: WECOM_BIND_RESULT_EVENT, ok: false, message },
-          window.location.origin
-        );
-      }
-      setError(message);
-    } finally {
-      setWecomLoading(false);
-    }
-  }
-
-  async function startWecomLogin() {
-    setWecomLoading(true);
-    setError('');
-    try {
-      const { url } = await fetchWecomAuthorizeUrl();
-      window.location.assign(url);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '获取企业微信扫码地址失败');
-      setWecomLoading(false);
-    }
-  }
+      setLoading(false);
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [isCallbackView]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isWecomProvider) {
+      await startWecomLogin();
+      return;
+    }
     const normalizedUsername = username.trim();
     if (!normalizedUsername || !password) {
       setError('用户名或密码不能为空');
@@ -197,6 +193,79 @@ export function LoginPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function startWecomLogin() {
+    setLoading(true);
+    setError('');
+    try {
+      const { url } = await fetchWecomAuthorizeUrl();
+      window.location.assign(url);
+      window.setTimeout(() => setLoading(false), 4000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取企业微信登录地址失败');
+      setLoading(false);
+    }
+  }
+
+  if (isCallbackView) {
+    return (
+      <main
+        data-cmp="Login"
+        className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-8 sm:px-6"
+        style={{
+          background:
+            'radial-gradient(circle at 50% 0%, rgba(59,130,246,0.24), transparent 30%), radial-gradient(circle at 12% 22%, rgba(6,182,212,0.18), transparent 28%), radial-gradient(circle at 88% 82%, rgba(16,185,129,0.14), transparent 30%), var(--zl-login-bg)',
+          color: 'var(--zl-text)',
+        }}
+      >
+        <div className="zl-login-grid absolute inset-0" aria-hidden="true" />
+        <div
+          className="zl-login-orb absolute left-[-6rem] top-20 h-64 w-64 rounded-full"
+          aria-hidden="true"
+        />
+        <div
+          className="zl-login-orb absolute bottom-[-4rem] right-[-5rem] h-80 w-80 rounded-full"
+          aria-hidden="true"
+        />
+        <section
+          className="relative z-10 flex w-full max-w-[420px] flex-col items-center gap-4 rounded-[24px] p-8 text-center"
+          style={{
+            background: 'var(--zl-login-panel-bg)',
+            border: '1px solid var(--zl-border)',
+            backdropFilter: 'blur(18px)',
+            boxShadow: 'var(--zl-login-panel-shadow)',
+          }}
+        >
+          {error ? (
+            <>
+              <p className="text-sm leading-6" style={{ color: '#fca5a5' }} role="alert">
+                {error}
+              </p>
+              <button
+                type="button"
+                onClick={() => window.location.replace('/login')}
+                className="zl-action-button rounded-xl px-4 py-2 text-sm font-medium"
+                style={{
+                  borderColor: 'var(--zl-border)',
+                  background: 'var(--zl-control-bg)',
+                  color: 'var(--zl-accent-text)',
+                }}
+              >
+                返回登录
+              </button>
+            </>
+          ) : (
+            <>
+              <Loader2 size={28} className="zl-spinner" />
+              <p className="text-sm font-medium" style={{ color: 'var(--zl-text)' }}>
+                正在处理企业微信授权，请稍候…
+              </p>
+            </>
+          )}
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -266,123 +335,118 @@ export function LoginPage() {
               </p>
             </div>
 
-            {wecomParams ? (
-              <WecomCallbackPanel loading={wecomLoading} error={error} />
-            ) : (
-              <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-                {providers.length > 0 ? (
-                  <LoginProviderSelect
-                    value={provider}
-                    providers={providers}
-                    onChange={setProvider}
-                  />
-                ) : null}
-                {provider === 'wecom' ? (
-                  <button
-                    type="button"
-                    onClick={() => void startWecomLogin()}
-                    disabled={wecomLoading}
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
-                    style={{
-                      background: 'linear-gradient(135deg, #16a34a, #10b981)',
-                      color: '#fff',
-                      boxShadow: '0 18px 48px rgba(16,185,129,0.32)',
-                    }}
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+              {providers.length > 0 ? (
+                <LoginProviderSelect
+                  value={provider}
+                  providers={providers}
+                  onChange={setProvider}
+                />
+              ) : null}
+              {isWecomProvider ? (
+                <div
+                  className="flex flex-col items-center gap-2 rounded-2xl px-4 py-5 text-center"
+                  style={inputStyle}
+                >
+                  <span
+                    className="grid h-14 w-14 place-items-center rounded-full"
+                    style={{ background: 'rgba(59,130,246,0.14)' }}
                   >
-                    {wecomLoading ? (
-                      <Loader2 size={17} className="zl-spinner" />
-                    ) : (
-                      <QrCode size={17} />
-                    )}
-                    {wecomLoading ? '跳转中...' : '使用企业微信扫码登录'}
-                  </button>
-                ) : (
-                  <>
-                    <AuthInput id="username" label="用户名" icon={<User size={17} />}>
-                      <input
-                        id="username"
-                        autoComplete="username"
-                        value={username}
-                        onChange={event => setUsername(event.target.value)}
-                        className="h-12 w-full rounded-2xl py-3 pl-12 pr-4 text-sm outline-none transition-all"
-                        style={inputStyle}
-                        placeholder="请输入用户名"
-                      />
-                    </AuthInput>
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <label className="block text-sm font-medium" htmlFor="password">
-                          密码
-                        </label>
-                        <Link
-                          to="/forgot-password"
-                          className="text-xs font-semibold"
-                          style={{ color: 'var(--zl-accent-text)' }}
-                        >
-                          忘记密码?
-                        </Link>
-                      </div>
-                      <div className="relative">
-                        <Lock
-                          className="absolute left-4 top-1/2 -translate-y-1/2"
-                          size={17}
-                          style={{ color: 'var(--zl-text-muted)' }}
-                        />
-                        <input
-                          id="password"
-                          autoComplete="current-password"
-                          type={showPassword ? 'text' : 'password'}
-                          value={password}
-                          onChange={event => setPassword(event.target.value)}
-                          className="h-12 w-full rounded-2xl py-3 pl-12 pr-12 text-sm outline-none transition-all"
-                          style={inputStyle}
-                          placeholder="请输入密码"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(value => !value)}
-                          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl"
-                          style={{ color: 'var(--zl-text-muted)' }}
-                          aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                        >
-                          {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-                <div aria-live="polite" className="min-h-6">
-                  {error ? (
-                    <p
-                      role="alert"
-                      className="rounded-xl px-3 py-2 text-xs"
-                      style={{
-                        background: 'rgba(239,68,68,0.12)',
-                        border: '1px solid rgba(239,68,68,0.28)',
-                        color: '#fca5a5',
-                      }}
-                    >
-                      {error}
-                    </p>
-                  ) : null}
+                    <QrCode size={26} style={{ color: 'var(--zl-accent-text)' }} />
+                  </span>
+                  <p className="text-sm font-medium" style={{ color: 'var(--zl-text)' }}>
+                    企业微信扫码登录
+                  </p>
+                  <p className="text-xs leading-5" style={{ color: 'var(--zl-text-muted)' }}>
+                    点击下方按钮跳转至企业微信授权页，
+                    <br />
+                    使用企业微信 App 扫码确认后自动登录
+                  </p>
                 </div>
-                {provider !== 'wecom' ? (
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="zl-login-submit flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
+              ) : (
+                <>
+                  <AuthInput id="username" label="用户名" icon={<User size={17} />}>
+                    <input
+                      id="username"
+                      autoComplete="username"
+                      value={username}
+                      onChange={event => setUsername(event.target.value)}
+                      className="h-12 w-full rounded-2xl py-3 pl-12 pr-4 text-sm outline-none transition-all"
+                      style={inputStyle}
+                      placeholder="请输入用户名"
+                    />
+                  </AuthInput>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between">
+                      <label className="block text-sm font-medium" htmlFor="password">
+                        密码
+                      </label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs font-semibold"
+                        style={{ color: 'var(--zl-accent-text)' }}
+                      >
+                        忘记密码?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock
+                        className="absolute left-4 top-1/2 -translate-y-1/2"
+                        size={17}
+                        style={{ color: 'var(--zl-text-muted)' }}
+                      />
+                      <input
+                        id="password"
+                        autoComplete="current-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={event => setPassword(event.target.value)}
+                        className="h-12 w-full rounded-2xl py-3 pl-12 pr-12 text-sm outline-none transition-all"
+                        style={inputStyle}
+                        placeholder="请输入密码"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(value => !value)}
+                        className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl"
+                        style={{ color: 'var(--zl-text-muted)' }}
+                        aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                      >
+                        {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+              <div aria-live="polite" className="min-h-6">
+                {error ? (
+                  <p
+                    role="alert"
+                    className="rounded-xl px-3 py-2 text-xs"
                     style={{
-                      background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
-                      color: '#fff',
-                      boxShadow: '0 18px 48px rgba(37,99,235,0.35)',
+                      background: 'rgba(239,68,68,0.12)',
+                      border: '1px solid rgba(239,68,68,0.28)',
+                      color: '#fca5a5',
                     }}
                   >
-                    {loading ? <Loader2 size={17} className="zl-spinner" /> : null}
-                    {loading ? '登录中...' : '登录'}
-                  </button>
+                    {error}
+                  </p>
                 ) : null}
-              </form>
-            )}
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="zl-login-submit flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                style={{
+                  background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
+                  color: '#fff',
+                  boxShadow: '0 18px 48px rgba(37,99,235,0.35)',
+                }}
+              >
+                {loading ? <Loader2 size={17} className="zl-spinner" /> : null}
+                {loading ? '处理中...' : isWecomProvider ? '企业微信扫码登录' : '登录'}
+              </button>
+            </form>
           </div>
         </section>
         <p className="text-xs" style={{ color: 'var(--zl-text-muted)' }}>
@@ -443,44 +507,6 @@ function AuthInput({
         </span>
         {children}
       </div>
-    </div>
-  );
-}
-
-function WecomCallbackPanel({ loading, error }: { loading: boolean; error: string }) {
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-col items-center gap-3 py-8 text-center">
-        {loading ? (
-          <>
-            <Loader2 size={28} className="zl-spinner" style={{ color: 'var(--zl-accent-text)' }} />
-            <p className="text-sm" style={{ color: 'var(--zl-text-muted)' }}>
-              正在处理企业微信登录...
-            </p>
-          </>
-        ) : (
-          <>
-            <QrCode size={28} style={{ color: 'var(--zl-text-muted)' }} />
-            <p className="text-sm" style={{ color: 'var(--zl-text-muted)' }}>
-              企业微信登录未完成，可关闭本窗口后重新发起
-            </p>
-          </>
-        )}
-      </div>
-      {error ? (
-        <p
-          role="alert"
-          aria-live="polite"
-          className="rounded-xl px-3 py-2 text-center text-xs"
-          style={{
-            background: 'rgba(239,68,68,0.12)',
-            border: '1px solid rgba(239,68,68,0.28)',
-            color: '#fca5a5',
-          }}
-        >
-          {error}
-        </p>
-      ) : null}
     </div>
   );
 }
