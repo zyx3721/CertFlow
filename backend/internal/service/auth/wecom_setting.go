@@ -69,8 +69,8 @@ func (s *Service) SaveWecomSetting(ctx context.Context, name string, enabled boo
 		"mode":           normalizeWecomMode(values["mode"]),
 		"corpid":         trimmedValue(values, "corpid"),
 		"agentid":        trimmedValue(values, "agentid"),
-		"redirectPrefix": strings.TrimSuffix(trimmedValue(values, "redirectPrefix"), "/"),
-		"ssoBaseUrl":     strings.TrimSuffix(trimmedValue(values, "ssoBaseUrl"), "/"),
+		"redirectPrefix": strings.TrimRight(trimmedValue(values, "redirectPrefix"), "/"),
+		"ssoBaseUrl":     strings.TrimRight(trimmedValue(values, "ssoBaseUrl"), "/"),
 		"ssoAppID":       trimmedValue(values, "ssoAppID"),
 	}
 	if secret := trimmedValue(values, "secret"); secret != "" {

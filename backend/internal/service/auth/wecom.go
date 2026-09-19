@@ -151,10 +151,10 @@ func verifyWecomState(secret, state, purpose string) (wecomState, error) {
 	return parsed, nil
 }
 
-// wecomCallbackRedirectURL 计算企微扫码后的回跳地址，优先使用管理员配置的前缀。
+// wecomCallbackRedirectURL 回调落地页固定为前端登录路由：配置了前缀用前缀，否则按当前访问地址推断。
 func (c WecomConfig) wecomCallbackRedirectURL(scheme, host string) string {
 	if c.RedirectPrefix != "" {
-		return strings.TrimSuffix(c.RedirectPrefix, "/") + "/login"
+		return strings.TrimRight(c.RedirectPrefix, "/") + "/login"
 	}
 	return scheme + "://" + host + "/login"
 }
