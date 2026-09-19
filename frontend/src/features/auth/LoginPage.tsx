@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { Eye, EyeOff, Loader2, Lock, Moon, Sun, User } from 'lucide-react';
-import { type FormEvent, useEffect, useState } from 'react';
+import { Eye, EyeOff, Loader2, Lock, Moon, QrCode, Sun, User } from 'lucide-react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { toast } from 'sonner';
 import { AppTooltip } from '@/components/app-tooltip';
@@ -15,9 +15,17 @@ import {
 import {
   fetchCurrentUser,
   fetchPublicAuthProviders,
+  fetchWecomAuthorizeUrl,
   getAuthToken,
   login,
+  persistSession,
   persistUser,
+  setCurrentUserSnapshot,
+  wecomBindByCode,
+  wecomBindByTicket,
+  WECOM_BIND_RESULT_EVENT,
+  wecomLoginByCode,
+  wecomLoginByTicket,
   type PublicAuthProvider,
 } from '@/lib/auth';
 import {
@@ -27,6 +35,28 @@ import {
   toggleZlTheme,
   type ZlTheme,
 } from '@/lib/utils';
+
+type WecomCallbackParams = { code: string; state: string; ticket: string };
+
+// 一次性授权参数只读取一次并立即从地址栏清除，防止刷新或回退重放
+function readWecomCallbackParams(): WecomCallbackParams | null {
+  if (typeof window === 'undefined') return null;
+  const search = new URLSearchParams(window.location.search);
+  const code = search.get('code') ?? '';
+  const state = search.get('state') ?? '';
+  const ticket = search.get('ticket') ?? '';
+  if (!ticket && (!code || !state)) return null;
+  search.delete('code');
+  search.delete('state');
+  search.delete('ticket');
+  const query = search.toString();
+  window.history.replaceState(
+    null,
+    '',
+    window.location.pathname + (query ? `?${query}` : '') + window.location.hash
+  );
+  return { code, state, ticket };
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -38,6 +68,9 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<ZlTheme>(getInitialZlTheme);
+  const [wecomLoading, setWecomLoading] = useState(false);
+  const [wecomParams] = useState<WecomCallbackParams | null>(readWecomCallbackParams);
+  const wecomProcessed = useRef(false);
   const brand = useBrandSettings();
   const toggleLabel = theme === 'dark' ? '切换浅色背景' : '切换深色背景';
 
@@ -47,6 +80,9 @@ export function LoginPage() {
   }, [theme]);
 
   useEffect(() => {
+    if (wecomParams) {
+      return;
+    }
     let cancelled = false;
     if (getAuthToken()) {
       void fetchCurrentUser()
@@ -60,14 +96,18 @@ export function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, wecomParams]);
 
   useEffect(() => {
     let cancelled = false;
     fetchPublicAuthProviders()
       .then(response => {
         if (cancelled) return;
-        setProviders(response.items.filter(item => item.enabled && item.type === 'ldap'));
+        setProviders(
+          response.items.filter(
+            item => item.enabled && (item.type === 'ldap' || item.type === 'wecom')
+          )
+        );
       })
       .catch(() => {
         if (!cancelled) {
@@ -78,6 +118,66 @@ export function LoginPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!wecomParams || wecomProcessed.current) return;
+    wecomProcessed.current = true;
+    void handleWecomCallback(wecomParams);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wecomParams]);
+
+  async function handleWecomCallback(params: WecomCallbackParams) {
+    setWecomLoading(true);
+    setError('');
+    const isBind = Boolean(getAuthToken());
+    try {
+      if (isBind) {
+        const binding = params.ticket
+          ? await wecomBindByTicket({ ticket: params.ticket })
+          : await wecomBindByCode({ code: params.code, state: params.state });
+        if (!binding.bound) {
+          throw new Error('企业微信账号绑定失败');
+        }
+        window.opener?.postMessage(
+          { type: WECOM_BIND_RESULT_EVENT, ok: true },
+          window.location.origin
+        );
+        toast.success('企业微信绑定成功');
+        window.close();
+        return;
+      }
+      const session = params.ticket
+        ? await wecomLoginByTicket({ ticket: params.ticket })
+        : await wecomLoginByCode({ code: params.code, state: params.state });
+      persistSession(session);
+      setCurrentUserSnapshot(session.user);
+      toast.success(`欢迎回来，${session.user.displayName || session.user.username}`);
+      void navigate({ to: '/', replace: true });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '企业微信登录失败，请稍后重试';
+      if (isBind) {
+        window.opener?.postMessage(
+          { type: WECOM_BIND_RESULT_EVENT, ok: false, message },
+          window.location.origin
+        );
+      }
+      setError(message);
+    } finally {
+      setWecomLoading(false);
+    }
+  }
+
+  async function startWecomLogin() {
+    setWecomLoading(true);
+    setError('');
+    try {
+      const { url } = await fetchWecomAuthorizeUrl();
+      window.location.assign(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '获取企业微信扫码地址失败');
+      setWecomLoading(false);
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -166,94 +266,123 @@ export function LoginPage() {
               </p>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-              {providers.length > 0 ? (
-                <LoginProviderSelect
-                  value={provider}
-                  providers={providers}
-                  onChange={setProvider}
-                />
-              ) : null}
-              <AuthInput id="username" label="用户名" icon={<User size={17} />}>
-                <input
-                  id="username"
-                  autoComplete="username"
-                  value={username}
-                  onChange={event => setUsername(event.target.value)}
-                  className="h-12 w-full rounded-2xl py-3 pl-12 pr-4 text-sm outline-none transition-all"
-                  style={inputStyle}
-                  placeholder="请输入用户名"
-                />
-              </AuthInput>
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-sm font-medium" htmlFor="password">
-                    密码
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs font-semibold"
-                    style={{ color: 'var(--zl-accent-text)' }}
-                  >
-                    忘记密码?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock
-                    className="absolute left-4 top-1/2 -translate-y-1/2"
-                    size={17}
-                    style={{ color: 'var(--zl-text-muted)' }}
+            {wecomParams ? (
+              <WecomCallbackPanel loading={wecomLoading} error={error} />
+            ) : (
+              <form className="space-y-5" onSubmit={handleSubmit} noValidate>
+                {providers.length > 0 ? (
+                  <LoginProviderSelect
+                    value={provider}
+                    providers={providers}
+                    onChange={setProvider}
                   />
-                  <input
-                    id="password"
-                    autoComplete="current-password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={event => setPassword(event.target.value)}
-                    className="h-12 w-full rounded-2xl py-3 pl-12 pr-12 text-sm outline-none transition-all"
-                    style={inputStyle}
-                    placeholder="请输入密码"
-                  />
+                ) : null}
+                {provider === 'wecom' ? (
                   <button
                     type="button"
-                    onClick={() => setShowPassword(value => !value)}
-                    className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl"
-                    style={{ color: 'var(--zl-text-muted)' }}
-                    aria-label={showPassword ? '隐藏密码' : '显示密码'}
-                  >
-                    {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-                  </button>
-                </div>
-              </div>
-              <div aria-live="polite" className="min-h-6">
-                {error ? (
-                  <p
-                    role="alert"
-                    className="rounded-xl px-3 py-2 text-xs"
+                    onClick={() => void startWecomLogin()}
+                    disabled={wecomLoading}
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
                     style={{
-                      background: 'rgba(239,68,68,0.12)',
-                      border: '1px solid rgba(239,68,68,0.28)',
-                      color: '#fca5a5',
+                      background: 'linear-gradient(135deg, #16a34a, #10b981)',
+                      color: '#fff',
+                      boxShadow: '0 18px 48px rgba(16,185,129,0.32)',
                     }}
                   >
-                    {error}
-                  </p>
+                    {wecomLoading ? (
+                      <Loader2 size={17} className="zl-spinner" />
+                    ) : (
+                      <QrCode size={17} />
+                    )}
+                    {wecomLoading ? '跳转中...' : '使用企业微信扫码登录'}
+                  </button>
+                ) : (
+                  <>
+                    <AuthInput id="username" label="用户名" icon={<User size={17} />}>
+                      <input
+                        id="username"
+                        autoComplete="username"
+                        value={username}
+                        onChange={event => setUsername(event.target.value)}
+                        className="h-12 w-full rounded-2xl py-3 pl-12 pr-4 text-sm outline-none transition-all"
+                        style={inputStyle}
+                        placeholder="请输入用户名"
+                      />
+                    </AuthInput>
+                    <div>
+                      <div className="mb-2 flex items-center justify-between">
+                        <label className="block text-sm font-medium" htmlFor="password">
+                          密码
+                        </label>
+                        <Link
+                          to="/forgot-password"
+                          className="text-xs font-semibold"
+                          style={{ color: 'var(--zl-accent-text)' }}
+                        >
+                          忘记密码?
+                        </Link>
+                      </div>
+                      <div className="relative">
+                        <Lock
+                          className="absolute left-4 top-1/2 -translate-y-1/2"
+                          size={17}
+                          style={{ color: 'var(--zl-text-muted)' }}
+                        />
+                        <input
+                          id="password"
+                          autoComplete="current-password"
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={event => setPassword(event.target.value)}
+                          className="h-12 w-full rounded-2xl py-3 pl-12 pr-12 text-sm outline-none transition-all"
+                          style={inputStyle}
+                          placeholder="请输入密码"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(value => !value)}
+                          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-xl"
+                          style={{ color: 'var(--zl-text-muted)' }}
+                          aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                        >
+                          {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div aria-live="polite" className="min-h-6">
+                  {error ? (
+                    <p
+                      role="alert"
+                      className="rounded-xl px-3 py-2 text-xs"
+                      style={{
+                        background: 'rgba(239,68,68,0.12)',
+                        border: '1px solid rgba(239,68,68,0.28)',
+                        color: '#fca5a5',
+                      }}
+                    >
+                      {error}
+                    </p>
+                  ) : null}
+                </div>
+                {provider !== 'wecom' ? (
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="zl-login-submit flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
+                      color: '#fff',
+                      boxShadow: '0 18px 48px rgba(37,99,235,0.35)',
+                    }}
+                  >
+                    {loading ? <Loader2 size={17} className="zl-spinner" /> : null}
+                    {loading ? '登录中...' : '登录'}
+                  </button>
                 ) : null}
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="zl-login-submit flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60"
-                style={{
-                  background: 'linear-gradient(135deg, #2563eb, #06b6d4)',
-                  color: '#fff',
-                  boxShadow: '0 18px 48px rgba(37,99,235,0.35)',
-                }}
-              >
-                {loading ? <Loader2 size={17} className="zl-spinner" /> : null}
-                {loading ? '登录中...' : '登录'}
-              </button>
-            </form>
+              </form>
+            )}
           </div>
         </section>
         <p className="text-xs" style={{ color: 'var(--zl-text-muted)' }}>
@@ -318,6 +447,44 @@ function AuthInput({
   );
 }
 
+function WecomCallbackPanel({ loading, error }: { loading: boolean; error: string }) {
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        {loading ? (
+          <>
+            <Loader2 size={28} className="zl-spinner" style={{ color: 'var(--zl-accent-text)' }} />
+            <p className="text-sm" style={{ color: 'var(--zl-text-muted)' }}>
+              正在处理企业微信登录...
+            </p>
+          </>
+        ) : (
+          <>
+            <QrCode size={28} style={{ color: 'var(--zl-text-muted)' }} />
+            <p className="text-sm" style={{ color: 'var(--zl-text-muted)' }}>
+              企业微信登录未完成，可关闭本窗口后重新发起
+            </p>
+          </>
+        )}
+      </div>
+      {error ? (
+        <p
+          role="alert"
+          aria-live="polite"
+          className="rounded-xl px-3 py-2 text-center text-xs"
+          style={{
+            background: 'rgba(239,68,68,0.12)',
+            border: '1px solid rgba(239,68,68,0.28)',
+            color: '#fca5a5',
+          }}
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function LoginProviderSelect({
   value,
   providers,
@@ -329,7 +496,10 @@ function LoginProviderSelect({
 }) {
   const options = [
     { id: 'local', name: '本地账号' },
-    ...providers.map(item => ({ id: item.id, name: item.name || 'AD/LDAP' })),
+    ...providers.map(item => ({
+      id: item.id,
+      name: item.name || (item.type === 'wecom' ? '企业微信' : 'AD/LDAP'),
+    })),
   ];
   return (
     <div>

@@ -46,6 +46,7 @@ const defaults: PkiSettings = {
   resetCaptchaTtlMinutes: 1,
   passwordResetSendCooldownMinutes: 0.5,
   passwordResetRateLimitMinutes: 5,
+  wecomStateTtlMinutes: 5,
 };
 
 const cards = [
@@ -59,7 +60,7 @@ const cards = [
   {
     id: 'security' as const,
     title: '安全时效',
-    description: '找回密码验证码、发送冷却与限流窗口',
+    description: '找回密码验证码、发送冷却、限流窗口与企业微信扫码有效期',
     icon: KeyRound,
     color: '#22c55e',
   },
@@ -369,6 +370,18 @@ export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
                 setForm(value => ({ ...value, passwordResetRateLimitMinutes }))
               }
             />
+            <NumberControl
+              label="企业微信扫码有效期"
+              description="企微授权 state 的有效窗口，超时需重新扫码登录或绑定"
+              unit="分钟"
+              value={form.wecomStateTtlMinutes}
+              min={1}
+              max={60}
+              disabled={!canManage}
+              onChange={wecomStateTtlMinutes =>
+                setForm(value => ({ ...value, wecomStateTtlMinutes }))
+              }
+            />
           </div>
         ) : null}
         {active === 'basic' ? (
@@ -461,7 +474,11 @@ export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
               disabledText="不会对外提供在线证书状态响应"
             />
             <ConfigField
-              field={{ key: 'ocspUrl', label: 'OCSP 响应器地址', helper: '路径固定为 /ocsp，由 Nginx 代理；可通过 /ocsp/health 查看服务状态' }}
+              field={{
+                key: 'ocspUrl',
+                label: 'OCSP 响应器地址',
+                helper: '路径固定为 /ocsp，由 Nginx 代理；可通过 /ocsp/health 查看服务状态',
+              }}
               value={form.ocspUrl}
               disabled
               onChange={value => setForm(current => ({ ...current, ocspUrl: String(value) }))}
@@ -488,6 +505,7 @@ function sectionDefaults(section: BaseSection): Partial<PkiSettings> {
       resetCaptchaTtlMinutes: defaults.resetCaptchaTtlMinutes,
       passwordResetSendCooldownMinutes: defaults.passwordResetSendCooldownMinutes,
       passwordResetRateLimitMinutes: defaults.passwordResetRateLimitMinutes,
+      wecomStateTtlMinutes: defaults.wecomStateTtlMinutes,
     };
   if (section === 'basic')
     return {

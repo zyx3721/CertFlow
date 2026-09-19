@@ -334,6 +334,322 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v1/auth/wecom/authorize": {
+            "get": {
+                "description": "根据企业微信认证配置返回扫码登录地址，直连模式返回企微 wwlogin 页面，统一认证中心模式返回认证中心登录页。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "获取企业微信扫码授权地址",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomAuthorizeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/bind": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "直连模式：校验绑定 state 并用授权码换取企微 userid 后绑定到当前用户。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "绑定企业微信",
+                "parameters": [
+                    {
+                        "description": "企微回跳参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomCallbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomBindingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "解除当前用户的企业微信账号绑定。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "解绑企业微信",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomBindingResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/bind-url": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "为当前登录用户签发绑定用扫码地址，state 与当前用户绑定。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "获取企业微信绑定授权地址",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomAuthorizeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/binding": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "查询当前用户的企业微信绑定状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomBindingResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/callback": {
+            "post": {
+                "description": "直连模式：校验 state 并用授权码换取企微 userid，仅允许已绑定平台用户的企业微信账号登录。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "企业微信扫码登录回调",
+                "parameters": [
+                    {
+                        "description": "企微回跳参数",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomCallbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Session"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/sso/bind": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "统一认证中心模式：使用 ticket 换取企微 userid 后绑定到当前用户。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "通过统一认证中心绑定企业微信",
+                "parameters": [
+                    {
+                        "description": "认证中心回跳 ticket",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomSSOCallbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomBindingResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/wecom/sso/callback": {
+            "post": {
+                "description": "统一认证中心模式：使用 ticket 调用认证中心换取企微 userid，仅允许已绑定平台用户的企业微信账号登录。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "统一认证中心登录回调",
+                "parameters": [
+                    {
+                        "description": "认证中心回跳 ticket",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomSSOCallbackRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Session"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/v1/cas": {
             "get": {
                 "security": [
@@ -1478,6 +1794,80 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/router.statusResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/settings/auth-provider/wecom": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "读取企业微信认证配置，Secret 只返回是否已配置（hasSecret / hasSsoAppSecret）。",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "获取企业微信认证配置",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomProviderResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/router.errorDocResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "保存企业微信认证配置；Secret 留空表示沿用旧值，clearConfig 为 true 时清空并停用。",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Settings"
+                ],
+                "summary": "保存企业微信认证配置",
+                "parameters": [
+                    {
+                        "description": "企业微信认证配置",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/router.configurationRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/router.wecomProviderResponse"
                         }
                     },
                     "400": {
@@ -3713,6 +4103,10 @@ const docTemplate = `{
                 },
                 "siteName": {
                     "type": "string"
+                },
+                "wecomStateTtlMinutes": {
+                    "type": "integer",
+                    "example": 5
                 }
             }
         },
@@ -3832,6 +4226,97 @@ const docTemplate = `{
             "properties": {
                 "disabled": {
                     "type": "boolean"
+                }
+            }
+        },
+        "router.wecomAuthorizeResponse": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.wecomBindingResponse": {
+            "type": "object",
+            "properties": {
+                "bound": {
+                    "type": "boolean"
+                },
+                "wecomUserid": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.wecomCallbackRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.wecomProviderConfig": {
+            "type": "object",
+            "properties": {
+                "agentid": {
+                    "type": "string"
+                },
+                "corpid": {
+                    "type": "string"
+                },
+                "hasSecret": {
+                    "type": "boolean"
+                },
+                "hasSsoAppSecret": {
+                    "type": "boolean"
+                },
+                "mode": {
+                    "type": "string",
+                    "example": "direct"
+                },
+                "redirectPrefix": {
+                    "type": "string"
+                },
+                "ssoAppID": {
+                    "type": "string"
+                },
+                "ssoBaseUrl": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.wecomProviderResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "$ref": "#/definitions/router.wecomProviderConfig"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                },
+                "updatedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "router.wecomSSOCallbackRequest": {
+            "type": "object",
+            "properties": {
+                "ticket": {
+                    "type": "string"
                 }
             }
         },

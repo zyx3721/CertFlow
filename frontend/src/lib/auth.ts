@@ -2,6 +2,7 @@ const TOKEN_KEY = 'certflow.auth.token';
 const USER_KEY = 'certflow.auth.user';
 const EXPIRES_AT_KEY = 'certflow.auth.expires_at';
 export const AUTH_SESSION_CHANGED_EVENT = 'certflow:auth-session-changed';
+export const WECOM_BIND_RESULT_EVENT = 'certflow:wecom-bind-result';
 
 export type AuthUser = {
   id: string;
@@ -303,3 +304,66 @@ export function changePassword(body: {
     body: JSON.stringify(body),
   });
 }
+
+// 企业微信认证 API。绑定与状态接口手动携带 token 并关闭全局 401 跳转，
+// 避免绑定弹窗中的失败把主窗口会话清空。
+function manualAuthHeaders(): HeadersInit {
+  const token = getAuthToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export type WecomAuthorizeResponse = { url: string };
+
+export type WecomBinding = { bound: boolean; wecomUserid?: string };
+
+export const fetchWecomAuthorizeUrl = () =>
+  api<WecomAuthorizeResponse>('/api/v1/auth/wecom/authorize', { auth: false });
+
+export const fetchWecomBindUrl = () =>
+  api<WecomAuthorizeResponse>('/api/v1/auth/wecom/bind-url', {
+    auth: false,
+    headers: manualAuthHeaders(),
+  });
+
+export const fetchWecomBinding = () =>
+  api<WecomBinding>('/api/v1/auth/wecom/binding', {
+    auth: false,
+    headers: manualAuthHeaders(),
+  });
+
+export const wecomLoginByCode = (body: { code: string; state: string }) =>
+  api<AuthSession>('/api/v1/auth/wecom/callback', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify(body),
+  });
+
+export const wecomLoginByTicket = (body: { ticket: string }) =>
+  api<AuthSession>('/api/v1/auth/wecom/sso/callback', {
+    method: 'POST',
+    auth: false,
+    body: JSON.stringify(body),
+  });
+
+export const wecomBindByCode = (body: { code: string; state: string }) =>
+  api<WecomBinding>('/api/v1/auth/wecom/bind', {
+    method: 'POST',
+    auth: false,
+    headers: manualAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+
+export const wecomBindByTicket = (body: { ticket: string }) =>
+  api<WecomBinding>('/api/v1/auth/wecom/sso/bind', {
+    method: 'POST',
+    auth: false,
+    headers: manualAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+
+export const unbindWecom = () =>
+  api<WecomBinding>('/api/v1/auth/wecom/bind', {
+    method: 'DELETE',
+    auth: false,
+    headers: manualAuthHeaders(),
+  });

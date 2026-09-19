@@ -197,6 +197,26 @@ type configurationRequest struct {
 	Config      map[string]any `json:"config"`
 }
 
+type wecomProviderConfig struct {
+	Mode            string `json:"mode" example:"direct"`
+	CorpID          string `json:"corpid"`
+	AgentID         string `json:"agentid"`
+	RedirectPrefix  string `json:"redirectPrefix"`
+	SSOBaseURL      string `json:"ssoBaseUrl"`
+	SSOAppID        string `json:"ssoAppID"`
+	HasSecret       bool   `json:"hasSecret"`
+	HasSsoAppSecret bool   `json:"hasSsoAppSecret"`
+}
+
+type wecomProviderResponse struct {
+	ID        string              `json:"id"`
+	Type      string              `json:"type"`
+	Name      string              `json:"name"`
+	Enabled   bool                `json:"enabled"`
+	Config    wecomProviderConfig `json:"config"`
+	UpdatedAt string              `json:"updatedAt"`
+}
+
 type emailConfigurationRequest struct {
 	PasswordResetEnabled bool           `json:"passwordResetEnabled"`
 	ClearConfig          bool           `json:"clearConfig"`

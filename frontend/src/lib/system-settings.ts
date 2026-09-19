@@ -10,6 +10,7 @@ import type {
   UserGroup,
   UserGroupInput,
   UserInput,
+  WeComProviderSetting,
 } from '@/features/settings/types';
 
 type List<T> = { items: T[]; total: number };
@@ -91,6 +92,20 @@ export const testAuthProvider = () =>
     method: 'POST',
   });
 
+export const fetchWecomProvider = () =>
+  api<WeComProviderSetting>('/api/v1/settings/auth-provider/wecom');
+
+export const saveWecomProvider = (body: {
+  name: string;
+  enabled: boolean;
+  clearConfig: boolean;
+  config: Record<string, unknown>;
+}) =>
+  api<WeComProviderSetting>('/api/v1/settings/auth-provider/wecom', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+
 export const fetchEmailSetting = () => api<EmailSetting>('/api/v1/settings/email');
 
 export const saveEmailSetting = (body: {
@@ -120,10 +135,11 @@ export const saveNotificationChannel = (
     clearConfig: boolean;
     config: Record<string, unknown>;
   }
-) => api<NotificationChannel>(`/api/v1/settings/notifications/${encodeURIComponent(id)}`, {
-  method: 'PUT',
-  body: JSON.stringify(body),
-});
+) =>
+  api<NotificationChannel>(`/api/v1/settings/notifications/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
 
 export const testNotificationChannel = (id: string, to = '') =>
   api<{ status: string }>(`/api/v1/settings/notifications/${encodeURIComponent(id)}/test`, {

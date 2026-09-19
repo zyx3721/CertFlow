@@ -623,6 +623,9 @@ definitions:
         type: integer
       siteName:
         type: string
+      wecomStateTtlMinutes:
+        example: 5
+        type: integer
     type: object
   router.publicAuthProvidersResponse:
     properties:
@@ -702,6 +705,65 @@ definitions:
     properties:
       disabled:
         type: boolean
+    type: object
+  router.wecomAuthorizeResponse:
+    properties:
+      url:
+        type: string
+    type: object
+  router.wecomBindingResponse:
+    properties:
+      bound:
+        type: boolean
+      wecomUserid:
+        type: string
+    type: object
+  router.wecomCallbackRequest:
+    properties:
+      code:
+        type: string
+      state:
+        type: string
+    type: object
+  router.wecomProviderConfig:
+    properties:
+      agentid:
+        type: string
+      corpid:
+        type: string
+      hasSecret:
+        type: boolean
+      hasSsoAppSecret:
+        type: boolean
+      mode:
+        example: direct
+        type: string
+      redirectPrefix:
+        type: string
+      ssoAppID:
+        type: string
+      ssoBaseUrl:
+        type: string
+    type: object
+  router.wecomProviderResponse:
+    properties:
+      config:
+        $ref: '#/definitions/router.wecomProviderConfig'
+      enabled:
+        type: boolean
+      id:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  router.wecomSSOCallbackRequest:
+    properties:
+      ticket:
+        type: string
     type: object
   router.workflowListResponse:
     properties:
@@ -927,6 +989,206 @@ paths:
           schema:
             $ref: '#/definitions/router.publicAuthProvidersResponse'
       summary: 获取登录方式
+      tags:
+      - Auth
+  /api/v1/auth/wecom/authorize:
+    get:
+      description: 根据企业微信认证配置返回扫码登录地址，直连模式返回企微 wwlogin 页面，统一认证中心模式返回认证中心登录页。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomAuthorizeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 获取企业微信扫码授权地址
+      tags:
+      - Auth
+  /api/v1/auth/wecom/bind:
+    delete:
+      description: 解除当前用户的企业微信账号绑定。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomBindingResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 解绑企业微信
+      tags:
+      - Auth
+    post:
+      consumes:
+      - application/json
+      description: 直连模式：校验绑定 state 并用授权码换取企微 userid 后绑定到当前用户。
+      parameters:
+      - description: 企微回跳参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.wecomCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomBindingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 绑定企业微信
+      tags:
+      - Auth
+  /api/v1/auth/wecom/bind-url:
+    get:
+      description: 为当前登录用户签发绑定用扫码地址，state 与当前用户绑定。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomAuthorizeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取企业微信绑定授权地址
+      tags:
+      - Auth
+  /api/v1/auth/wecom/binding:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomBindingResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 查询当前用户的企业微信绑定状态
+      tags:
+      - Auth
+  /api/v1/auth/wecom/callback:
+    post:
+      consumes:
+      - application/json
+      description: 直连模式：校验 state 并用授权码换取企微 userid，仅允许已绑定平台用户的企业微信账号登录。
+      parameters:
+      - description: 企微回跳参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.wecomCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 企业微信扫码登录回调
+      tags:
+      - Auth
+  /api/v1/auth/wecom/sso/bind:
+    post:
+      consumes:
+      - application/json
+      description: 统一认证中心模式：使用 ticket 换取企微 userid 后绑定到当前用户。
+      parameters:
+      - description: 认证中心回跳 ticket
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.wecomSSOCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomBindingResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 通过统一认证中心绑定企业微信
+      tags:
+      - Auth
+  /api/v1/auth/wecom/sso/callback:
+    post:
+      consumes:
+      - application/json
+      description: 统一认证中心模式：使用 ticket 调用认证中心换取企微 userid，仅允许已绑定平台用户的企业微信账号登录。
+      parameters:
+      - description: 认证中心回跳 ticket
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.wecomSSOCallbackRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Session'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      summary: 统一认证中心登录回调
       tags:
       - Auth
   /api/v1/cas:
@@ -1655,6 +1917,52 @@ paths:
       security:
       - BearerAuth: []
       summary: 测试 LDAP 配置
+      tags:
+      - Settings
+  /api/v1/settings/auth-provider/wecom:
+    get:
+      description: 读取企业微信认证配置，Secret 只返回是否已配置（hasSecret / hasSsoAppSecret）。
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomProviderResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 获取企业微信认证配置
+      tags:
+      - Settings
+    put:
+      consumes:
+      - application/json
+      description: 保存企业微信认证配置；Secret 留空表示沿用旧值，clearConfig 为 true 时清空并停用。
+      parameters:
+      - description: 企业微信认证配置
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/router.configurationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/router.wecomProviderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/router.errorDocResponse'
+      security:
+      - BearerAuth: []
+      summary: 保存企业微信认证配置
       tags:
       - Settings
   /api/v1/settings/email:

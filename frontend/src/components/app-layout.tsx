@@ -25,6 +25,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AppTooltip } from '@/components/app-tooltip';
 import { PasswordDialog } from '@/components/password-dialog';
+import { WecomBindingMenuItems } from '@/features/auth/WecomBindingMenu';
 import { useBrandSettings } from '@/lib/branding';
 import { NotificationCenter } from '@/components/notification-center';
 import {
@@ -488,6 +489,7 @@ export function AppLayout() {
                     boxShadow: 'var(--zl-menu-shadow)',
                   }}
                 >
+                  <WecomBindingMenuItems closeMenu={() => setUserMenuOpen(false)} />
                   <button
                     type="button"
                     role="menuitem"

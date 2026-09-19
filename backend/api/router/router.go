@@ -45,6 +45,14 @@ func New(cfg config.Config, store *repository.Store, auth *authsvc.Service, pki 
 	mux.HandleFunc("GET /ocsp/{serial}", r.ocspStatusBySerial)
 	mux.HandleFunc("POST /api/v1/auth/login", r.login)
 	mux.HandleFunc("GET /api/v1/auth/providers", r.authProviders)
+	mux.HandleFunc("GET /api/v1/auth/wecom/authorize", r.wecomAuthorize)
+	mux.HandleFunc("POST /api/v1/auth/wecom/callback", r.wecomCallback)
+	mux.HandleFunc("POST /api/v1/auth/wecom/sso/callback", r.wecomSSOCallback)
+	mux.HandleFunc("GET /api/v1/auth/wecom/bind-url", r.require(r.wecomBindURL))
+	mux.HandleFunc("GET /api/v1/auth/wecom/binding", r.require(r.wecomBinding))
+	mux.HandleFunc("POST /api/v1/auth/wecom/bind", r.require(r.wecomBind))
+	mux.HandleFunc("POST /api/v1/auth/wecom/sso/bind", r.require(r.wecomSSOBind))
+	mux.HandleFunc("DELETE /api/v1/auth/wecom/bind", r.require(r.wecomUnbind))
 	mux.HandleFunc("GET /api/v1/public/settings", r.publicSettings)
 	mux.HandleFunc("GET /api/v1/auth/password-reset/captcha", r.passwordResetCaptcha)
 	mux.HandleFunc("POST /api/v1/auth/password-reset/verify", r.passwordResetVerify)
@@ -97,6 +105,8 @@ func New(cfg config.Config, store *repository.Store, auth *authsvc.Service, pki 
 	mux.HandleFunc("GET /api/v1/settings/auth-provider", r.requirePermission(domain.PermissionSettingsAuthRead, r.getAuthProvider))
 	mux.HandleFunc("PUT /api/v1/settings/auth-provider", r.requirePermission(domain.PermissionSettingsAuthManage, r.saveAuthProvider))
 	mux.HandleFunc("POST /api/v1/settings/auth-provider/test", r.requirePermission(domain.PermissionSettingsAuthManage, r.testAuthProvider))
+	mux.HandleFunc("GET /api/v1/settings/auth-provider/wecom", r.requirePermission(domain.PermissionSettingsAuthRead, r.getWecomProvider))
+	mux.HandleFunc("PUT /api/v1/settings/auth-provider/wecom", r.requirePermission(domain.PermissionSettingsAuthManage, r.saveWecomProvider))
 	mux.HandleFunc("GET /api/v1/settings/email", r.requirePermission(domain.PermissionSettingsNotifyRead, r.getEmailSetting))
 	mux.HandleFunc("PUT /api/v1/settings/email", r.requirePermission(domain.PermissionSettingsNotifyManage, r.saveEmailSetting))
 	mux.HandleFunc("POST /api/v1/settings/email/test", r.requirePermission(domain.PermissionSettingsNotifyManage, r.testEmailSetting))
@@ -261,8 +271,11 @@ func (r *Router) logout(w http.ResponseWriter, q *http.Request) {
 
 func authenticationAuditDetail(user domain.User, action string) string {
 	source := "本地用户"
-	if user.AuthenticationProvider == "ldap" {
+	switch user.AuthenticationProvider {
+	case "ldap":
 		source = "LDAP 用户"
+	case "wecom":
+		source = "企业微信用户"
 	}
 	return source + " " + user.Username + " " + action + "成功"
 }

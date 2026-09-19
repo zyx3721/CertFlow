@@ -36,8 +36,8 @@ var BuiltinPermissions = []domain.Permission{
 	{Key: domain.PermissionSettingsBaseManage, Name: "管理基础配置", Description: "维护平台、续期、CRL 和 OCSP 配置", Category: "系统配置", ImpliedReadPermission: domain.PermissionSettingsBaseRead},
 	{Key: domain.PermissionSettingsUsersRead, Name: "查看用户配置", Description: "查看用户、用户群组和角色", Category: "系统配置"},
 	{Key: domain.PermissionSettingsUsersManage, Name: "管理用户配置", Description: "维护用户、用户群组和角色", Category: "系统配置", ImpliedReadPermission: domain.PermissionSettingsUsersRead},
-	{Key: domain.PermissionSettingsAuthRead, Name: "查看认证配置", Description: "查看本地账号和 LDAP 配置", Category: "系统配置"},
-	{Key: domain.PermissionSettingsAuthManage, Name: "管理认证配置", Description: "维护并测试 LDAP 配置", Category: "系统配置", ImpliedReadPermission: domain.PermissionSettingsAuthRead},
+	{Key: domain.PermissionSettingsAuthRead, Name: "查看认证配置", Description: "查看本地账号、AD/LDAP 与企业微信认证配置", Category: "系统配置"},
+	{Key: domain.PermissionSettingsAuthManage, Name: "管理认证配置", Description: "维护并测试 AD/LDAP 与企业微信认证配置", Category: "系统配置", ImpliedReadPermission: domain.PermissionSettingsAuthRead},
 	{Key: domain.PermissionSettingsNotifyRead, Name: "查看通知配置", Description: "查看找回密码邮件媒介", Category: "系统配置"},
 	{Key: domain.PermissionSettingsNotifyManage, Name: "管理通知配置", Description: "维护并测试找回密码邮件媒介", Category: "系统配置", ImpliedReadPermission: domain.PermissionSettingsNotifyRead},
 }

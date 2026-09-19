@@ -57,6 +57,24 @@ export type AuthProviderSetting = {
   updatedAt: string;
 };
 
+export type WeComProviderSetting = {
+  id: string;
+  type: string;
+  name: string;
+  enabled: boolean;
+  updatedAt: string;
+  config: {
+    mode?: 'direct' | 'sso';
+    corpid?: string;
+    agentid?: string;
+    redirectPrefix?: string;
+    ssoBaseUrl?: string;
+    ssoAppID?: string;
+    hasSecret?: boolean;
+    hasSsoAppSecret?: boolean;
+  };
+};
+
 export type EmailSetting = {
   id: string;
   name: string;

@@ -18,6 +18,13 @@ func (s *Service) PublicProviders(ctx context.Context) ([]map[string]any, bool, 
 	if err == nil && ldap.Enabled {
 		items = append(items, map[string]any{"id": "ldap", "type": "ldap", "name": ldap.Name, "enabled": true})
 	}
+	wecom, err := s.store.AuthProviderSetting(ctx, "wecom")
+	if err != nil && !errors.Is(err, repository.ErrNotFound) {
+		return nil, false, err
+	}
+	if err == nil && wecom.Enabled {
+		items = append(items, map[string]any{"id": "wecom", "type": "wecom", "name": displayName(wecom.Name, "企业微信"), "enabled": true})
+	}
 	email, err := s.store.NotificationChannelSetting(ctx, "email")
 	if err != nil && !errors.Is(err, repository.ErrNotFound) {
 		return nil, false, err

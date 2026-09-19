@@ -120,6 +120,7 @@ export type PkiSettings = {
   resetCaptchaTtlMinutes: number;
   passwordResetSendCooldownMinutes: number;
   passwordResetRateLimitMinutes: number;
+  wecomStateTtlMinutes: number;
 };
 
 export type CertificateTrendPoint = {
@@ -158,7 +159,8 @@ export const importCA = (body: {
   certificatePEM: string;
   privateKeyPEM: string;
   csrPEM?: string;
-}) => api<CertificateAuthority>('/api/v1/cas/import', { method: 'POST', body: JSON.stringify(body) });
+}) =>
+  api<CertificateAuthority>('/api/v1/cas/import', { method: 'POST', body: JSON.stringify(body) });
 
 export const deleteCA = (id: string) =>
   api<void>(`/api/v1/cas/${encodeURIComponent(id)}`, { method: 'DELETE' });

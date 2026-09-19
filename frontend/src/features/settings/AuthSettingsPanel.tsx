@@ -1,8 +1,22 @@
-import { CheckCircle2, Network, Save, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  MessageCircle,
+  Network,
+  Save,
+  ToggleLeft,
+  ToggleRight,
+  Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { invalidatePublicAuthConfiguration } from '@/lib/auth';
-import { fetchAuthProvider, saveAuthProvider, testAuthProvider } from '@/lib/system-settings';
+import {
+  fetchAuthProvider,
+  fetchWecomProvider,
+  saveAuthProvider,
+  testAuthProvider,
+} from '@/lib/system-settings';
+import { WeComSettingsPanel } from './WeComSettingsPanel';
 import {
   ActionButton,
   ConfigField,
@@ -15,6 +29,8 @@ import {
 import { cardStyle } from './settings-style';
 
 type LDAPForm = Record<string, unknown>;
+
+type ProviderSummary = { name: string; enabled: boolean };
 
 const defaultForm: LDAPForm = {
   host: '',
@@ -64,7 +80,115 @@ const fields: SettingsField[] = [
   { key: 'groupFilter', label: '用户组过滤器', placeholder: 'cn=ops,dc=example,dc=com' },
 ];
 
+type AuthProviderKind = 'ldap' | 'wecom';
+
 export function AuthSettingsPanel({ canManage }: { canManage: boolean }) {
+  const [active, setActive] = useState<AuthProviderKind>('ldap');
+  const [ldapSummary, setLdapSummary] = useState<ProviderSummary>({
+    name: 'AD/LDAP',
+    enabled: false,
+  });
+  const [wecomSummary, setWecomSummary] = useState<ProviderSummary>({
+    name: '企业微信',
+    enabled: false,
+  });
+
+  const refreshSummaries = useCallback(async () => {
+    try {
+      const ldap = await fetchAuthProvider();
+      setLdapSummary({ name: ldap.name || 'AD/LDAP', enabled: ldap.enabled });
+    } catch (err) {
+      console.error('读取 LDAP 认证配置状态失败', err);
+    }
+    try {
+      const wecom = await fetchWecomProvider();
+      setWecomSummary({ name: wecom.name || '企业微信', enabled: wecom.enabled });
+    } catch (err) {
+      console.error('读取企业微信认证配置状态失败', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshSummaries();
+  }, [refreshSummaries]);
+
+  return (
+    <SettingsSplitLayout
+      sidebarLabel="认证配置"
+      sidebar={
+        <>
+          <ProviderCard
+            icon={<Network size={19} />}
+            color="text-sky-400"
+            title={ldapSummary.name}
+            description="通过企业目录服务实现统一身份认证，支持 AD/LDAP 登录"
+            enabled={ldapSummary.enabled}
+            active={active === 'ldap'}
+            onClick={() => setActive('ldap')}
+          />
+          <ProviderCard
+            icon={<MessageCircle size={19} />}
+            color="text-cyan-400"
+            title={wecomSummary.name}
+            description="企业微信扫码登录，支持在右上角绑定企微账号"
+            enabled={wecomSummary.enabled}
+            active={active === 'wecom'}
+            onClick={() => setActive('wecom')}
+          />
+        </>
+      }
+    >
+      {active === 'ldap' ? (
+        <LDAPSettingsPanel canManage={canManage} onSaved={() => void refreshSummaries()} />
+      ) : (
+        <WeComSettingsPanel canManage={canManage} onSaved={() => void refreshSummaries()} />
+      )}
+    </SettingsSplitLayout>
+  );
+}
+
+function ProviderCard({
+  icon,
+  color,
+  title,
+  description,
+  enabled,
+  active,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  color: string;
+  title: string;
+  description: string;
+  enabled: boolean;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="zl-config-side-card flex w-full items-start gap-3 rounded-lg p-3 text-left transition-all duration-200"
+      data-active={active ? 'true' : 'false'}
+      style={cardStyle(active)}
+      onClick={onClick}
+    >
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.05]">
+        <span className={color}>{icon}</span>
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center justify-between gap-3">
+          <span className="truncate text-sm font-semibold">{title}</span>
+          <UsageIndicator enabled={enabled} />
+        </span>
+        <span className="mt-1 block text-xs leading-5 text-[var(--zl-text-muted)]">
+          {description}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+function LDAPSettingsPanel({ canManage, onSaved }: { canManage: boolean; onSaved?: () => void }) {
   const [name, setName] = useState('AD/LDAP');
   const [enabled, setEnabled] = useState(false);
   const [savedEnabled, setSavedEnabled] = useState(false);
@@ -128,6 +252,7 @@ export function AuthSettingsPanel({ canManage }: { canManage: boolean }) {
       setForm({ ...defaultForm, ...saved.config });
       setClearRequested(false);
       invalidatePublicAuthConfiguration();
+      onSaved?.();
       toast.success('认证配置已保存');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : '认证配置保存失败');
@@ -156,129 +281,104 @@ export function AuthSettingsPanel({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <SettingsSplitLayout
-      sidebarLabel="认证媒介"
-      sidebar={
-        <button
-          type="button"
-          className="zl-config-side-card flex w-full items-start gap-3 rounded-lg p-3 text-left transition-all duration-200"
-          data-active="true"
-          style={cardStyle(true)}
-        >
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.05] text-blue-400">
-            <Network size={19} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center justify-between gap-3">
-              <span className="truncate text-sm font-semibold">{name}</span>
-              <UsageIndicator enabled={enabled} />
-            </span>
-            <span className="mt-1 block text-xs leading-5 text-[var(--zl-text-muted)]">
-              通过企业目录服务实现统一身份认证，支持 AD/LDAP 登录
-            </span>
-          </span>
-        </button>
+    <SettingsDetailPanel
+      header={
+        <SettingsDetailHeader
+          icon={Network}
+          color="#60a5fa"
+          title={name}
+          subtitle={enabled ? '已启用' : '未启用'}
+          active={enabled}
+        />
+      }
+      actions={
+        canManage ? (
+          <>
+            <ActionButton
+              icon={<Trash2 size={14} />}
+              label="清空配置"
+              tone="danger"
+              disabled={busy !== ''}
+              onClick={clearConfig}
+            />
+            <ActionButton
+              icon={<Save size={14} />}
+              label="保存"
+              busy={busy === 'save'}
+              disabled={busy !== '' && busy !== 'save'}
+              onClick={save}
+            />
+            <ActionButton
+              icon={<CheckCircle2 size={14} />}
+              label="测试"
+              tone="success"
+              busy={busy === 'test'}
+              disabled={!enabled || !savedEnabled || (busy !== '' && busy !== 'test')}
+              onClick={test}
+            />
+          </>
+        ) : null
       }
     >
-      <SettingsDetailPanel
-        header={
-          <SettingsDetailHeader
-            icon={Network}
-            color="#60a5fa"
-            title={name}
-            subtitle={enabled ? '已启用' : '未启用'}
-            active={enabled}
-          />
-        }
-        actions={
-          canManage ? (
-            <>
-              <ActionButton
-                icon={<Trash2 size={14} />}
-                label="清空配置"
-                tone="danger"
-                disabled={busy !== ''}
-                onClick={clearConfig}
-              />
-              <ActionButton
-                icon={<Save size={14} />}
-                label="保存"
-                busy={busy === 'save'}
-                disabled={busy !== '' && busy !== 'save'}
-                onClick={save}
-              />
-              <ActionButton
-                icon={<CheckCircle2 size={14} />}
-                label="测试"
-                tone="success"
-                busy={busy === 'test'}
-                disabled={!enabled || !savedEnabled || (busy !== '' && busy !== 'test')}
-                onClick={test}
-              />
-            </>
-          ) : null
-        }
-      >
-        {error ? (
-          <p className="mb-4 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3 text-sm text-amber-400">
-            {error}
-          </p>
-        ) : null}
-        <p className="mb-4 text-sm leading-6 text-[var(--zl-text-muted)]">
-          通过企业目录服务实现统一身份认证，支持 AD/LDAP 登录。
+      {error ? (
+        <p className="mb-4 rounded-lg border border-amber-400/25 bg-amber-500/10 p-3 text-sm text-amber-400">
+          {error}
         </p>
+      ) : null}
+      <p className="mb-4 text-sm leading-6 text-[var(--zl-text-muted)]">
+        通过企业目录服务实现统一身份认证，支持 AD/LDAP 登录。
+      </p>
+      <div className="space-y-3">
+        <EnableToggle
+          enabled={enabled}
+          disabled={!canManage}
+          onChange={value => {
+            setEnabled(value);
+            setClearRequested(false);
+          }}
+          label="启用认证"
+          enabledText="登录页将显示该认证方式"
+          disabledText="关闭后不会显示在登录页"
+        />
+        <ConfigField
+          field={{ key: 'name', label: '显示名称', required: true }}
+          value={name}
+          disabled={!canManage}
+          onChange={value => {
+            setName(String(value ?? ''));
+            setClearRequested(false);
+          }}
+        />
         <div className="space-y-3">
-          <EnableToggle
-            enabled={enabled}
-            disabled={!canManage}
-            onChange={value => {
-              setEnabled(value);
-              setClearRequested(false);
-            }}
-            label="启用认证"
-            enabledText="登录页将显示该认证方式"
-            disabledText="关闭后不会显示在登录页"
-          />
-          <ConfigField
-            field={{ key: 'name', label: '显示名称', required: true }}
-            value={name}
-            disabled={!canManage}
-            onChange={value => {
-              setName(String(value ?? ''));
-              setClearRequested(false);
-            }}
-          />
-          <div className="space-y-3">
-            <SectionTitle title="必填配置" />
-            {fields.slice(0, 6).map(field => (
-              <div key={field.key}>
-                <ConfigField
-                  field={field}
-                  value={form[field.key]}
-                  secretConfigured={field.key === 'bindPassword' && Boolean(form.hasBindPassword)}
-                  disabled={!canManage}
-                  onChange={value => updateField(field, value)}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="space-y-3">
-            <SectionTitle title="可选配置" />
-            {fields.slice(6).map(field => (
-              <div key={field.key}>
-                <ConfigField
-                  field={field}
-                  value={form[field.key]}
-                  secretConfigured={field.key === 'bindPassword' && Boolean(form.hasBindPassword)}
-                  disabled={!canManage}
-                  onChange={value => updateField(field, value)}
-                />
-              </div>
-            ))}
-          </div>
+          <SectionTitle title="必填配置" />
+          {fields.slice(0, 6).map(field => (
+            <div key={field.key}>
+              <ConfigField
+                field={field}
+                value={form[field.key]}
+                secretConfigured={field.key === 'bindPassword' && Boolean(form.hasBindPassword)}
+                disabled={!canManage}
+                onChange={value => updateField(field, value)}
+              />
+            </div>
+          ))}
         </div>
-      </SettingsDetailPanel>
-    </SettingsSplitLayout>
+        <div className="space-y-3">
+          <SectionTitle title="可选配置" />
+          {fields.slice(6).map(field => (
+            <div key={field.key}>
+              <ConfigField
+                field={field}
+                value={form[field.key]}
+                secretConfigured={field.key === 'bindPassword' && Boolean(form.hasBindPassword)}
+                disabled={!canManage}
+                onChange={value => updateField(field, value)}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </SettingsDetailPanel>
   );
 }
 

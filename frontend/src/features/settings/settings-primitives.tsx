@@ -15,6 +15,7 @@ export type SettingsField = {
   placeholder?: string;
   required?: boolean;
   helper?: string;
+  labelHint?: string;
   type?: 'text' | 'password' | 'number' | 'checkbox' | 'textarea' | 'select';
   inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
   options?: Array<{ label: string; value: string }>;
@@ -206,7 +207,15 @@ export function ConfigField({
   return (
     <label className="block space-y-1.5 text-xs" style={{ color: 'var(--zl-text-muted)' }}>
       <span className="flex items-center gap-1">
-        {field.label}
+        {field.labelHint ? (
+          <AppTooltip label={field.labelHint} placement="top">
+            <span className="cursor-help underline decoration-dotted underline-offset-4">
+              {field.label}
+            </span>
+          </AppTooltip>
+        ) : (
+          field.label
+        )}
         {field.required ? <span style={{ color: '#f87171' }}>*</span> : null}
       </span>
       {field.type === 'select' ? (
