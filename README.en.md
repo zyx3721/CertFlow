@@ -168,7 +168,7 @@ Open `http://localhost:5173`, sign in with `admin / 123456`, and **change the pa
 
 ## Deployment
 
-Only two paths are documented: **Docker Compose** (recommended) and **build from source**. The full step-by-step procedures (systemd, host Nginx HTTP/HTTPS examples) live in [docs/README.md](docs/README.md).
+Only two paths are documented: **Docker Compose** (recommended) and **Release binaries**. The full step-by-step procedures (host Nginx HTTP/HTTPS examples) live in [docs/README.md](docs/README.md).
 
 ### Option 1: Docker Compose
 
@@ -206,30 +206,161 @@ docker compose down                  # stop
 
 To unify domains, HTTPS or multi-site routing on the host, map a non-80 port (`8080:80`) and reverse-proxy from the host Nginx. Make sure the public PKI paths (`/crl/`, `/ocsp`) are proxied to the backend as well.
 
-### Option 2: Build from source
+### Option 2: Release binaries
 
-**Backend**
+Head to the [GitHub Releases](https://github.com/zyx3721/CertFlow/releases) page, download the archive matching your operating system and CPU architecture, then verify, extract, configure and start as described below.
+
+**Which package to download**
+
+| Your machine | File |
+| --- | --- |
+| Linux x86_64 | `certflow_<version>_linux_amd64.tar.gz` |
+| Linux ARM64 (Kunpeng, Phytium, …) | `certflow_<version>_linux_arm64.tar.gz` |
+| macOS Intel | `certflow_<version>_darwin_amd64.tar.gz` |
+| macOS Apple silicon | `certflow_<version>_darwin_arm64.tar.gz` |
+| Windows x86_64 | `certflow_<version>_windows_amd64.zip` |
+| Windows ARM64 | `certflow_<version>_windows_arm64.zip` |
+| Frontend UI (required on every platform) | `certflow-frontend_<version>.tar.gz` |
+| Checksums | `SHA256SUMS` |
+
+The backend package contains the `certflow` executable (`certflow.exe` on Windows), `.env.example` and a `README.txt`; the frontend package contains the Nitro SSR `.output` artifacts. The backend binary has no runtime dependencies; the frontend SSR requires Node.js on the target machine, and both options require you to provide PostgreSQL 16+.
+
+**1. Verify the download**
 
 ```bash
-cd backend
-go mod download
-cp .env.example .env && vim .env
-go build -o certflow-backend cmd/server/main.go
-./certflow-backend
+VERSION=1.0.3
+mkdir -p /data/certflow && cd /data/certflow
+sha256sum -c SHA256SUMS
 ```
 
-Use systemd for long-running deployments (full unit in [docs/README.md](docs/README.md), section 4.2).
-
-**Frontend**
+**2. Extract**
 
 ```bash
-cd frontend
-npm install
-npm run build                        # produces .output/ (Nitro SSR)
-HOST=127.0.0.1 PORT=5173 npm run start
+mkdir -p backend frontend/.output
+tar -xzf certflow_${VERSION}_linux_amd64.tar.gz -C backend --strip-components=1
+tar -xzf certflow-frontend_${VERSION}.tar.gz -C frontend/.output
 ```
 
-The frontend must be served by `node .output/server/index.mjs` (`npm run start`); **pointing Nginx at `.output/public` only will break server-rendered pages**. `/assets/` can be served directly from the static output with long-lived caching; `/api/` and `/swagger/` proxy to the backend on 8080; `/crl/`, `/ocsp`, `/ocsp/` must keep their original paths and methods when proxied. Full Nginx HTTP/HTTPS examples are in [docs/README.md](docs/README.md), section 4.4.
+This yields the following layout:
+
+```text
+/data/certflow/
+├── backend/
+│   ├── certflow           # backend binary
+│   └── .env.example
+└── frontend/
+    └── .output/
+        ├── public/        # browser static assets
+        └── server/
+            └── index.mjs  # Nitro SSR entry
+```
+
+**3. Configure and start the backend**
+
+```bash
+cd /data/certflow/backend
+cp .env.example .env
+vim .env               # at minimum set JWT_SECRET and PKI_KEY_ENCRYPTION_KEY, and point to a reachable PostgreSQL
+./certflow
+```
+
+Use systemd for long-running deployments:
+
+```ini
+# /etc/systemd/system/certflow-backend.service
+[Unit]
+Description=CertFlow Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/data/certflow/backend
+ExecStart=/data/certflow/backend/certflow
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload && systemctl enable --now certflow-backend
+```
+
+**4. Start the frontend SSR**
+
+```bash
+cd /data/certflow/frontend
+HOST=127.0.0.1 PORT=5173 node .output/server/index.mjs
+```
+
+**5. Terminate with Nginx**
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    client_max_body_size 50m;
+
+    # Frontend static assets served straight from .output/public
+    location ^~ /assets/ {
+        root /data/certflow/frontend/.output/public;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /swagger/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+    }
+
+    # Public PKI distribution: CRL and OCSP must keep their original paths and methods
+    location ^~ /crl/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location = /ocsp {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location ^~ /ocsp/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /health {
+        proxy_pass http://127.0.0.1:8080/api/health;
+    }
+}
+```
+
+The frontend must be served by `node .output/server/index.mjs`; **pointing Nginx at `.output/public` only will break server-rendered pages**. Full examples with HTTPS and 80→443 redirection are in [docs/README.md](docs/README.md), section 4.4.
+
+**6. Access**
+
+Same as Docker: console `http://your-domain.com` (`admin / 123456`), API docs `/swagger/index.html`, health check `/health`.
 
 ## Permission model
 
@@ -384,7 +515,7 @@ CertFlow/
 | Start here | Then |
 | --- | --- |
 | [Quick start](#quick-start) | Run the backend and frontend locally, default account and ports |
-| [Deployment](#deployment) | Docker Compose and source builds, environment variables, reverse proxy |
+| [Deployment](#deployment) | Docker Compose and Release binaries, environment variables, reverse proxy |
 | [Permission model](#permission-model) | How the 27 permissions are grouped, what built-in roles get |
 | [Full documentation](docs/README.md) | Complete endpoint list, full Nginx and HTTPS examples, environment variables |
 | [Beginner's guide](docs/CertFlow新手证书签发与Nginx配置指南.md) | From creating an internal CA to issuing certificates behind Nginx HTTPS |

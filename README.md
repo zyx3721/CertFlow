@@ -168,7 +168,7 @@ npm run dev
 
 ## 部署
 
-只保留两种方式：**Docker Compose 部署**（推荐）与**源码编译部署**。完整过程化步骤（含 systemd、宿主机 Nginx HTTP/HTTPS 示例）见 [docs/README.md](docs/README.md)。
+只保留两种方式：**Docker Compose 部署**（推荐）与 **Release 二进制部署**。完整过程化步骤（含宿主机 Nginx HTTP/HTTPS 示例）见 [docs/README.md](docs/README.md)。
 
 ### 方式一：Docker Compose 部署
 
@@ -206,30 +206,161 @@ docker compose down                  # 停止
 
 需要在宿主机上统一做域名、HTTPS 或多站点入口时，把端口映射改为非 80 端口（`8080:80`），再由宿主机 Nginx 反代到容器。注意 `/crl/`、`/ocsp` 等公开 PKI 分发路径必须一并反代到后端。
 
-### 方式二：源码编译部署
+### 方式二：Release 二进制部署
 
-**后端**
+前往 [GitHub Releases](https://github.com/zyx3721/CertFlow/releases) 页面，按自己的操作系统与 CPU 架构下载对应压缩包，再按下面步骤校验、解压、配置、启动。
+
+**下载哪个包**
+
+| 你的机器 | 下载文件 |
+| --- | --- |
+| Linux x86_64 | `certflow_<版本>_linux_amd64.tar.gz` |
+| Linux ARM64（鲲鹏、飞腾等） | `certflow_<版本>_linux_arm64.tar.gz` |
+| macOS Intel 芯片 | `certflow_<版本>_darwin_amd64.tar.gz` |
+| macOS Apple 芯片 | `certflow_<版本>_darwin_arm64.tar.gz` |
+| Windows x86_64 | `certflow_<版本>_windows_amd64.zip` |
+| Windows ARM64 | `certflow_<版本>_windows_arm64.zip` |
+| 前端界面（以上任意平台都需要） | `certflow-frontend_<版本>.tar.gz` |
+| 校验和 | `SHA256SUMS` |
+
+后端包内是 `certflow` 可执行文件（Windows 为 `certflow.exe`）、`.env.example` 与 `README.txt`；前端包内是 Nitro SSR 的 `.output` 产物。后端二进制无运行时依赖；前端 SSR 需要目标机器上安装 Node.js，且无论哪种方式都需要自备 PostgreSQL 16+。
+
+**1. 校验下载**
 
 ```bash
-cd backend
-go mod download
-cp .env.example .env && vim .env
-go build -o certflow-backend cmd/server/main.go
-./certflow-backend
+VERSION=1.0.3
+mkdir -p /data/certflow && cd /data/certflow
+sha256sum -c SHA256SUMS
 ```
 
-需要常驻时交给 systemd（完整单元配置见 [docs/README.md](docs/README.md) 4.2 节）。
-
-**前端**
+**2. 解压**
 
 ```bash
-cd frontend
-npm install
-npm run build                        # 产出 .output/（Nitro SSR）
-HOST=127.0.0.1 PORT=5173 npm run start
+mkdir -p backend frontend/.output
+tar -xzf certflow_${VERSION}_linux_amd64.tar.gz -C backend --strip-components=1
+tar -xzf certflow-frontend_${VERSION}.tar.gz -C frontend/.output
 ```
 
-前端必须经 `node .output/server/index.mjs`（即 `npm run start`）提供 SSR；**只把 `.output/public` 配成静态根目录会导致服务端渲染页面无法返回**。`/assets/` 可由 Nginx 直接读取静态产物并启用长期缓存；`/api/`、`/swagger/` 反代到后端 8080；`/crl/`、`/ocsp`、`/ocsp/` 必须保留原始路径与方法反代到后端。完整 Nginx HTTP/HTTPS 示例见 [docs/README.md](docs/README.md) 4.4 节。
+得到的目录结构：
+
+```text
+/data/certflow/
+├── backend/
+│   ├── certflow           # 后端二进制
+│   └── .env.example
+└── frontend/
+    └── .output/
+        ├── public/        # 浏览器静态资源
+        └── server/
+            └── index.mjs  # Nitro SSR 入口
+```
+
+**3. 配置并启动后端**
+
+```bash
+cd /data/certflow/backend
+cp .env.example .env
+vim .env               # 至少设置 JWT_SECRET 与 PKI_KEY_ENCRYPTION_KEY，并指向可用的 PostgreSQL
+./certflow
+```
+
+需要常驻时交给 systemd：
+
+```ini
+# /etc/systemd/system/certflow-backend.service
+[Unit]
+Description=CertFlow Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/data/certflow/backend
+ExecStart=/data/certflow/backend/certflow
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+systemctl daemon-reload && systemctl enable --now certflow-backend
+```
+
+**4. 启动前端 SSR**
+
+```bash
+cd /data/certflow/frontend
+HOST=127.0.0.1 PORT=5173 node .output/server/index.mjs
+```
+
+**5. 用 Nginx 收口**
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    client_max_body_size 50m;
+
+    # 前端静态资源：直接读取 .output/public
+    location ^~ /assets/ {
+        root /data/certflow/frontend/.output/public;
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /swagger/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+    }
+
+    # 公开 PKI 分发：CRL 与 OCSP 必须保留原始路径与方法反代到后端
+    location ^~ /crl/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location = /ocsp {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location ^~ /ocsp/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        add_header X-Content-Type-Options nosniff always;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:5173;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location = /health {
+        proxy_pass http://127.0.0.1:8080/api/health;
+    }
+}
+```
+
+前端必须经 `node .output/server/index.mjs` 提供 SSR；**只把 `.output/public` 配成静态根目录会导致服务端渲染页面无法返回**。含 HTTPS 与 80→443 跳转的完整示例见 [docs/README.md](docs/README.md) 4.4 节。
+
+**6. 访问**
+
+同 Docker 方式：控制台 `http://your-domain.com`（`admin / 123456`）、接口文档 `/swagger/index.html`、健康检查 `/health`。
 
 ## 权限模型
 
@@ -384,7 +515,7 @@ CertFlow/
 | 先看这个 | 再往下 |
 | --- | --- |
 | [快速开始](#快速开始) | 本地起后端与前端，默认账号与端口 |
-| [部署](#部署) | Docker Compose 与源码编译两条路径、环境变量、反向代理 |
+| [部署](#部署) | Docker Compose 与 Release 二进制两条路径、环境变量、反向代理 |
 | [权限模型](#权限模型) | 27 项权限怎么分组、内置角色各有什么 |
 | [完整版说明](docs/README.md) | 全量接口清单、Nginx 与 HTTPS 完整示例、环境变量明细 |
 | [新手指南](docs/CertFlow新手证书签发与Nginx配置指南.md) | 从创建内部 CA 到签发业务证书并部署 Nginx HTTPS |
