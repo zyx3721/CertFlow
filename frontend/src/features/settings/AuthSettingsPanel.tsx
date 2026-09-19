@@ -337,7 +337,7 @@ function LDAPSettingsPanel({ canManage, onSaved }: { canManage: boolean; onSaved
             setClearRequested(false);
           }}
           label="启用认证"
-          enabledText="登录页将显示该认证方式"
+          enabledText="登录页将显示 AD/LDAP 认证登录方式"
           disabledText="关闭后不会显示在登录页"
         />
         <ConfigField
