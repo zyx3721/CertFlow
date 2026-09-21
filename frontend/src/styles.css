@@ -1679,6 +1679,7 @@
   .zl-login-frame::before,
   .zl-dialog-panel,
   .zl-sidebar-active-indicator,
+  .zl-boot-icon,
   .zl-loading-dot,
   .zl-toast-spin,
   .zl-flow-range:hover:not(:disabled)::-webkit-slider-runnable-track,

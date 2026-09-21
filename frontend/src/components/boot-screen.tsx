@@ -1,10 +1,11 @@
-import { ShieldCheck } from 'lucide-react';
+import { useBrandSettings } from '@/lib/branding';
 
 export function BootScreen() {
+  const brand = useBrandSettings();
   return (
     <div
       role="status"
-      aria-label="CertFlow 正在加载"
+      aria-label={`${brand.siteName} 正在加载`}
       className="relative flex min-h-dvh items-center justify-center overflow-hidden"
       style={{
         background:
@@ -18,9 +19,11 @@ export function BootScreen() {
         aria-hidden="true"
       />
       <div className="relative z-10 flex flex-col items-center">
-        <span className="zl-boot-icon grid h-20 w-20 place-items-center rounded-[20px] bg-[linear-gradient(135deg,#2563eb,#06b6d4)] text-white">
-          <ShieldCheck size={38} aria-hidden="true" />
-        </span>
+        <img
+          src={brand.iconData}
+          alt=""
+          className="zl-boot-icon h-20 w-20 object-contain"
+        />
         <div
           className="mt-5 flex items-center gap-2 text-sm font-semibold"
           style={{ color: 'var(--zl-accent-text)' }}
@@ -30,7 +33,7 @@ export function BootScreen() {
           <span className="zl-loading-dot" />
           <span className="zl-loading-dot" />
         </div>
-        <p className="zl-gradient-text mt-4 text-xl font-bold tracking-wide">CertFlow</p>
+        <p className="zl-gradient-text mt-4 text-xl font-bold tracking-wide">{brand.siteName}</p>
       </div>
     </div>
   );
