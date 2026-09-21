@@ -234,6 +234,11 @@ npm install
 echo "VITE_API_BASE_URL=http://127.0.0.1:8080" > .env
 ```
 
+品牌配置直出说明（SSR）：
+
+- 浏览器标签标题、收藏夹图标与启动加载页显示的品牌名称、图标，由前端 SSR 服务渲染时直连后端 `GET /api/v1/public/settings` 读取并直出 HTML，刷新页面不会再先闪现默认品牌再切换为自定义品牌
+- SSR 服务读取品牌配置使用的后端地址同样取 `VITE_API_BASE_URL`（默认 `http://127.0.0.1:8080`）；后端暂时不可达时自动回退默认品牌，不影响页面打开
+
 3. 启动前端服务：
 
 ```powershell
@@ -604,7 +609,8 @@ npm run build
 
 - `.output/server/index.mjs`：生产环境 Node SSR 入口；
 - `.output/public/`：浏览器静态资源，包含 JS、CSS、favicon 等文件；
-- 生产环境前端无需单独配置 API 地址，统一通过 Nginx 将 `/api/` 反向代理到后端。
+- 生产环境页面 `/api/` 请求统一通过 Nginx 反向代理到后端；
+- 前端 SSR 服务渲染首屏时会按 `VITE_API_BASE_URL`（默认 `http://127.0.0.1:8080`）直连后端读取品牌配置并直出标题、图标与启动页，后端不在该地址时需通过该变量指定。
 
 因此生产部署时需要先启动 `.output/server/index.mjs`，再由 Nginx 将页面请求反向代理到该前端服务；不要只把 `.output/public` 配置为 Nginx 静态根目录，否则服务端渲染页面无法正常返回。
 
@@ -616,6 +622,9 @@ HOST=127.0.0.1 PORT=5173 npm run start
 
 # 方式2：后台运行（日志输出到 certflow-frontend.log）
 nohup env HOST=127.0.0.1 PORT=5173 npm run start > certflow-frontend.log 2>&1 &
+
+# 后端不在本机 8080 时，可同时指定 SSR 读取品牌配置的后端地址（无需重新构建）：
+VITE_API_BASE_URL=http://192.168.1.10:8080 HOST=127.0.0.1 PORT=5173 npm run start
 ```
 
 ## 4.4 配置Nginx反向代理

@@ -22,6 +22,8 @@ import {
 import { type ReactNode, useEffect, useState } from 'react';
 import { BootScreen } from '@/components/boot-screen';
 import { Toaster } from '@/components/ui/sonner';
+import { resolveBrandSettings } from '@/lib/branding';
+import { fetchSsrBrandSettings } from '@/lib/ssr-branding';
 
 import appCss from '../styles.css?url';
 
@@ -131,32 +133,36 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'CertFlow' },
-      { name: 'description', content: '企业 PKI 证书生命周期管理控制台。' },
-      { name: 'author', content: 'CertFlow' },
-      { property: 'og:title', content: 'CertFlow 控制台' },
-      { property: 'og:description', content: '企业 PKI 证书生命周期管理控制台。' },
-      { property: 'og:type', content: 'website' },
-      { name: 'twitter:card', content: 'summary' },
-      { name: 'twitter:title', content: 'CertFlow 控制台' },
-      { name: 'twitter:description', content: '企业 PKI 证书生命周期管理控制台。' },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-      {
-        rel: 'icon',
-        href: '/favicon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-  }),
+  loader: () => fetchSsrBrandSettings(),
+  head: ({ loaderData }) => {
+    const brand = resolveBrandSettings(loaderData);
+    return {
+      meta: [
+        { charSet: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { title: brand.siteName },
+        { name: 'description', content: '企业 PKI 证书生命周期管理控制台。' },
+        { name: 'author', content: 'CertFlow' },
+        { property: 'og:title', content: 'CertFlow 控制台' },
+        { property: 'og:description', content: '企业 PKI 证书生命周期管理控制台。' },
+        { property: 'og:type', content: 'website' },
+        { name: 'twitter:card', content: 'summary' },
+        { name: 'twitter:title', content: 'CertFlow 控制台' },
+        { name: 'twitter:description', content: '企业 PKI 证书生命周期管理控制台。' },
+      ],
+      links: [
+        {
+          rel: 'stylesheet',
+          href: appCss,
+        },
+        {
+          rel: 'icon',
+          href: brand.iconData,
+          ...(brand.iconData.startsWith('data:') ? {} : { type: 'image/svg+xml' }),
+        },
+      ],
+    };
+  },
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useMatches } from '@tanstack/react-router';
 import { api } from '@/lib/auth';
 import type { PkiSettings } from '@/lib/pki';
 
@@ -30,8 +31,22 @@ export function setBrandSettings(value: Partial<BrandSettings>) {
   listeners.forEach(listener => listener(snapshot));
 }
 
+export function resolveBrandSettings(loaderData: unknown): BrandSettings {
+  if (snapshot !== defaultBrandSettings) return snapshot;
+  if (isBrandSettings(loaderData)) return loaderData;
+  return defaultBrandSettings;
+}
+
+export function useRootLoaderBranding(): BrandSettings | undefined {
+  const rootLoaderData = useMatches()[0]?.loaderData as unknown;
+  return isBrandSettings(rootLoaderData) ? rootLoaderData : undefined;
+}
+
 export function useBrandSettings() {
-  const [value, setValue] = useState(snapshot);
+  const loaderBranding = useRootLoaderBranding();
+  const [value, setValue] = useState<BrandSettings>(() =>
+    snapshot !== defaultBrandSettings ? snapshot : (loaderBranding ?? defaultBrandSettings)
+  );
 
   useEffect(() => {
     listeners.add(setValue);
@@ -58,7 +73,7 @@ export function useBrandSettings() {
   return value;
 }
 
-function normalizeBrandSettings(value: Partial<BrandSettings>): BrandSettings {
+export function normalizeBrandSettings(value: Partial<BrandSettings>): BrandSettings {
   return {
     siteName: text(value.siteName, defaultBrandSettings.siteName),
     loginName: text(value.loginName, defaultBrandSettings.loginName),
@@ -67,6 +82,19 @@ function normalizeBrandSettings(value: Partial<BrandSettings>): BrandSettings {
     iconData: text(value.iconData, defaultBrandSettings.iconData),
     expiryNotificationDays: expiryDays(value.expiryNotificationDays),
   };
+}
+
+function isBrandSettings(value: unknown): value is BrandSettings {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.siteName === 'string' &&
+    typeof record.loginName === 'string' &&
+    typeof record.appName === 'string' &&
+    typeof record.appSubtitle === 'string' &&
+    typeof record.iconData === 'string' &&
+    typeof record.expiryNotificationDays === 'number'
+  );
 }
 
 function text(value: string | undefined, fallback: string) {
