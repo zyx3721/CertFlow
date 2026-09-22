@@ -27,17 +27,31 @@ func (s *Service) EnsureLoginAllowed(ctx context.Context, username string) error
 	if name == "" || strings.EqualFold(strings.TrimSpace(username), "admin") {
 		return nil
 	}
+	settings, err := s.store.Settings(ctx)
+	if err != nil {
+		return err
+	}
+	maxFailures := settingsInt(settings, "loginMaxFailures", 5)
+	lockoutMinutes := settingsInt(settings, "loginLockoutMinutes", 2)
 	count, lastFailedAt, err := s.store.CountLoginFailures(ctx, name)
 	if err != nil {
 		return err
 	}
-	if count < int64(s.loginMaxFailures) || lastFailedAt <= 0 {
+	if count < int64(maxFailures) || lastFailedAt <= 0 {
 		return nil
 	}
-	if remaining := lastFailedAt + int64(s.loginLockoutMinutes)*60 - time.Now().Unix(); remaining > 0 {
+	if remaining := lastFailedAt + int64(lockoutMinutes)*60 - time.Now().Unix(); remaining > 0 {
 		return LoginLockedError{Minutes: (remaining + 59) / 60}
 	}
 	return nil
+}
+
+// settingsInt 从设置键值中读取正整数，缺失或非法时返回默认值
+func settingsInt(settings map[string]any, key string, fallback int) int {
+	if value, ok := settings[key].(float64); ok && value >= 1 {
+		return int(value)
+	}
+	return fallback
 }
 
 // RecordLoginFailure 记录一次密码校验失败（用户名统一小写存储），并顺带清理超过一天的旧记录

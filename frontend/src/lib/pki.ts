@@ -121,6 +121,8 @@ export type PkiSettings = {
   passwordResetSendCooldownMinutes: number;
   passwordResetRateLimitMinutes: number;
   wecomStateTtlMinutes: number;
+  loginMaxFailures: number;
+  loginLockoutMinutes: number;
 };
 
 export type CertificateTrendPoint = {

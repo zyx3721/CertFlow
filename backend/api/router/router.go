@@ -232,6 +232,7 @@ func (r *Router) login(w http.ResponseWriter, q *http.Request) {
 	if lockErr := r.auth.EnsureLoginAllowed(q.Context(), body.Username); lockErr != nil {
 		var locked authsvc.LoginLockedError
 		if errors.As(lockErr, &locked) {
+			r.store.Audit(q.Context(), domain.User{Username: body.Username}, "用户登录锁定", body.Username, "auth", "failure", clientIP(q), locked.Error())
 			write(w, http.StatusTooManyRequests, map[string]string{"message": locked.Error()})
 			return
 		}

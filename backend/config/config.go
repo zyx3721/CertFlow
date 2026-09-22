@@ -23,10 +23,8 @@ type Config struct {
 type ServerConfig struct{ Host, Port, Mode string }
 type DatabaseConfig struct{ Host, Port, Name, User, Password, SSLMode string }
 type AuthConfig struct {
-	SessionSecret       string
-	SessionExpireHours  int
-	LoginMaxFailures    int
-	LoginLockoutMinutes int
+	SessionSecret      string
+	SessionExpireHours int
 }
 type PKIConfig struct{ KeyEncryptionKey []byte }
 type CORSConfig struct{ Origin string }
@@ -63,10 +61,8 @@ func LoadWithOverrides(overrides map[string]string, logger *slog.Logger) (Config
 			SSLMode:  lookup("DB_SSLMODE", "disable"),
 		},
 		Auth: AuthConfig{
-			SessionSecret:       lookup("JWT_SECRET", ""),
-			SessionExpireHours:  positiveInt(lookup, "JWT_EXPIRE_HOURS", 12),
-			LoginMaxFailures:    positiveInt(lookup, "LOGIN_MAX_FAILURES", 5),
-			LoginLockoutMinutes: positiveInt(lookup, "LOGIN_LOCKOUT_MINUTES", 2),
+			SessionSecret:      lookup("JWT_SECRET", ""),
+			SessionExpireHours: positiveInt(lookup, "JWT_EXPIRE_HOURS", 12),
 		},
 		PKI: PKIConfig{
 			KeyEncryptionKey: key,

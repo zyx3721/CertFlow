@@ -27,6 +27,8 @@ type pkiSettings struct {
 	PasswordResetSendCooldownMinutes float64 `json:"passwordResetSendCooldownMinutes"`
 	PasswordResetRateLimitMinutes    int     `json:"passwordResetRateLimitMinutes"`
 	WecomStateTTLMinutes             int     `json:"wecomStateTtlMinutes" example:"5"`
+	LoginMaxFailures                 int     `json:"loginMaxFailures"`
+	LoginLockoutMinutes              int     `json:"loginLockoutMinutes"`
 }
 
 func (r *Router) publicSettings(w http.ResponseWriter, q *http.Request) {
@@ -106,6 +108,10 @@ func (r *Router) saveSettings(w http.ResponseWriter, q *http.Request) {
 		write(w, http.StatusBadRequest, map[string]string{"message": "企业微信扫码有效期范围为 1-60 分钟"})
 		return
 	}
+	if settings.LoginMaxFailures < 3 || settings.LoginMaxFailures > 10 || settings.LoginLockoutMinutes < 1 || settings.LoginLockoutMinutes > 10 {
+		write(w, http.StatusBadRequest, map[string]string{"message": "登录失败锁定安全时效配置不合法"})
+		return
+	}
 	if settings.CRLEnabled && settings.CRLURL == "" {
 		write(w, http.StatusBadRequest, map[string]string{"message": "启用 CRL 时必须配置分发地址"})
 		return
@@ -134,6 +140,8 @@ func (r *Router) saveSettings(w http.ResponseWriter, q *http.Request) {
 		"passwordResetSendCooldownMinutes": settings.PasswordResetSendCooldownMinutes,
 		"passwordResetRateLimitMinutes":    settings.PasswordResetRateLimitMinutes,
 		"wecomStateTtlMinutes":             settings.WecomStateTTLMinutes,
+		"loginMaxFailures":                 settings.LoginMaxFailures,
+		"loginLockoutMinutes":              settings.LoginLockoutMinutes,
 	}
 
 	if err := r.store.SaveSettings(q.Context(), settingsMap); err != nil {

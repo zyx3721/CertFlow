@@ -47,6 +47,8 @@ const defaults: PkiSettings = {
   passwordResetSendCooldownMinutes: 0.5,
   passwordResetRateLimitMinutes: 5,
   wecomStateTtlMinutes: 5,
+  loginMaxFailures: 5,
+  loginLockoutMinutes: 2,
 };
 
 const cards = [
@@ -380,6 +382,28 @@ export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
               disabled={!canManage}
               onChange={wecomStateTtlMinutes =>
                 setForm(value => ({ ...value, wecomStateTtlMinutes }))
+              }
+            />
+            <NumberControl
+              label="登录失败锁定次数"
+              description={`同一账号连续 ${form.loginMaxFailures} 次密码错误后锁定，admin 不受限`}
+              unit="次"
+              value={form.loginMaxFailures}
+              min={3}
+              max={10}
+              disabled={!canManage}
+              onChange={loginMaxFailures => setForm(value => ({ ...value, loginMaxFailures }))}
+            />
+            <NumberControl
+              label="登录锁定等待时长"
+              description={`达到锁定次数后需等待 ${form.loginLockoutMinutes} 分钟才能重试`}
+              unit="分钟"
+              value={form.loginLockoutMinutes}
+              min={1}
+              max={10}
+              disabled={!canManage}
+              onChange={loginLockoutMinutes =>
+                setForm(value => ({ ...value, loginLockoutMinutes }))
               }
             />
           </div>
