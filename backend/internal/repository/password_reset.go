@@ -8,6 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const passwordResetRetentionPeriod = 7 * 24 * time.Hour
+
 type PasswordResetRequest struct {
 	TokenHash     string
 	UserID        string
@@ -19,6 +21,7 @@ type PasswordResetRequest struct {
 }
 
 func (s *Store) CreatePasswordResetRequest(ctx context.Context, tokenHash string, userID string, expiresAt time.Time) error {
+	_, _ = s.Pool.Exec(ctx, "DELETE FROM password_reset_requests WHERE expires_at < $1", time.Now().Add(-passwordResetRetentionPeriod))
 	_, err := s.Pool.Exec(ctx, "INSERT INTO password_reset_requests(token_hash,user_id,expires_at) VALUES($1,$2,$3)", tokenHash, userID, expiresAt)
 	return err
 }
@@ -36,6 +39,7 @@ func (s *Store) PasswordResetRequest(ctx context.Context, tokenHash string) (Pas
 }
 
 func (s *Store) SetPasswordResetCode(ctx context.Context, tokenHash string, codeHash string, expiresAt time.Time) error {
+	_, _ = s.Pool.Exec(ctx, "DELETE FROM password_reset_requests WHERE code_sent_at < $1", time.Now().Add(-passwordResetRetentionPeriod))
 	result, err := s.Pool.Exec(ctx, `
 		UPDATE password_reset_requests
 		SET code_hash=$2,code_expires_at=$3,code_sent_at=now()
