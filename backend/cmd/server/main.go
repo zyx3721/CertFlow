@@ -214,7 +214,7 @@ func run() int {
 	handler := router.New(
 		cfg,
 		store,
-		authsvc.New(store, cfg.Auth.SessionTTL(), cfg.Auth.SessionSecret, box, notifyService),
+		authsvc.New(store, cfg.Auth.SessionTTL(), cfg.Auth.SessionSecret, box, notifyService, cfg.Auth.LoginMaxFailures, cfg.Auth.LoginLockoutMinutes),
 		pkiService,
 		notifyService,
 		logger,

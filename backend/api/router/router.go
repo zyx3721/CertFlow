@@ -229,10 +229,26 @@ func (r *Router) login(w http.ResponseWriter, q *http.Request) {
 		write(w, 400, map[string]string{"message": "请求格式不正确"})
 		return
 	}
+	if lockErr := r.auth.EnsureLoginAllowed(q.Context(), body.Username); lockErr != nil {
+		var locked authsvc.LoginLockedError
+		if errors.As(lockErr, &locked) {
+			write(w, http.StatusTooManyRequests, map[string]string{"message": locked.Error()})
+			return
+		}
+		r.logger.Error("Check login lock failed", "error", lockErr)
+	}
 	session, err := r.auth.Login(q.Context(), body.Username, body.Password, body.Provider)
 	if err != nil {
+		if errors.Is(err, authsvc.ErrCredentials) {
+			if recordErr := r.auth.RecordLoginFailure(q.Context(), body.Username); recordErr != nil {
+				r.logger.Error("Record login failure failed", "error", recordErr)
+			}
+		}
 		write(w, 401, map[string]string{"message": loginFailureMessage(err)})
 		return
+	}
+	if _, clearErr := r.auth.ClearLoginFailures(q.Context(), body.Username); clearErr != nil {
+		r.logger.Error("Clear login failures failed", "error", clearErr)
 	}
 	r.store.Audit(q.Context(), session.User, "用户登录", session.User.Username, "auth", "success", clientIP(q), authenticationAuditDetail(session.User, "登录"))
 	write(w, 200, map[string]any{"token": session.Token, "expiresAt": session.ExpiresAt, "user": session.User})

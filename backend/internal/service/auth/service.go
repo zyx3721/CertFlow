@@ -25,19 +25,21 @@ var (
 )
 
 type Service struct {
-	store         *repository.Store
-	ttl           time.Duration
-	box           *security.Cryptobox
-	captchaSecret []byte
-	notifier      PasswordResetNotifier
+	store              *repository.Store
+	ttl                time.Duration
+	loginMaxFailures   int
+	loginLockoutMinutes int
+	box                *security.Cryptobox
+	captchaSecret      []byte
+	notifier           PasswordResetNotifier
 }
 
 type PasswordResetNotifier interface {
 	SendPasswordReset(context.Context, string, string, string, time.Time, string) error
 }
 
-func New(store *repository.Store, ttl time.Duration, sessionSecret string, box *security.Cryptobox, notifier PasswordResetNotifier) *Service {
-	return &Service{store: store, ttl: ttl, captchaSecret: []byte(sessionSecret), box: box, notifier: notifier}
+func New(store *repository.Store, ttl time.Duration, sessionSecret string, box *security.Cryptobox, notifier PasswordResetNotifier, loginMaxFailures, loginLockoutMinutes int) *Service {
+	return &Service{store: store, ttl: ttl, loginMaxFailures: loginMaxFailures, loginLockoutMinutes: loginLockoutMinutes, captchaSecret: []byte(sessionSecret), box: box, notifier: notifier}
 }
 func (s *Service) Login(ctx context.Context, username, password, provider string) (domain.Session, error) {
 	authProvider := "local"
