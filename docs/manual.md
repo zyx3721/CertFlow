@@ -1036,6 +1036,7 @@ server {
   - 证书用途约束支持服务器、客户端和 mTLS 双向认证。
 - 增量迁移 `002_wecom_auth.sql` 创建企业微信账号绑定表 `user_wecom_bindings`，并写入企业微信认证提供方默认配置行。
 - 增量迁移 `003_wecom_session_provider.sql` 将会话表 `auth_provider` 校验约束扩展为允许 `wecom`，企业微信扫码登录产生的会话可正常落库。
+- 增量迁移 `004_drop_sessions_last_seen.sql` 移除会话表 `last_seen_at` 闲置续期列，会话有效期仅由 `expires_at` 决定。
 - CRL 文件不落库存储，下载时按撤销事件即时生成。
 - 已记录到 `schema_migrations` 的迁移不会重放，因此修改已应用的迁移文件不会改变已有数据库。
 
