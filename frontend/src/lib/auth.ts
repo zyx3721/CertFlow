@@ -300,17 +300,6 @@ export const confirmPasswordReset = (body: {
     body: JSON.stringify(body),
   });
 
-export function changePassword(body: {
-  old_password: string;
-  new_password: string;
-  confirm_password: string;
-}) {
-  return api<{ status: string }>('/api/auth/change-password', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
 // 企业微信认证 API。绑定与状态接口手动携带 token 并关闭全局 401 跳转，
 // 避免绑定弹窗中的失败把主窗口会话清空。
 function manualAuthHeaders(): HeadersInit {
