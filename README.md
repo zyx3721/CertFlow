@@ -545,6 +545,7 @@ CertFlow/
 
 | 版本 | 发布日期 | 更新日志 |
 | --- | --- | --- |
+| v1.1.2 | 2026-09-22 | [verchanglog/v1.1.2.md](verchanglog/v1.1.2.md) |
 | v1.1.1 | 2026-09-22 | [verchanglog/v1.1.1.md](verchanglog/v1.1.1.md) |
 | v1.1.0 | 2026-09-20 | [verchanglog/v1.1.0.md](verchanglog/v1.1.0.md) |
 | v1.0.3 | 2026-07-28 | [verchanglog/v1.0.3.md](verchanglog/v1.0.3.md) |
