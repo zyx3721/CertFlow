@@ -6,10 +6,7 @@ import { serverEnv } from '@/lib/server-env';
 export const fetchSsrBrandSettings = createServerFn({ method: 'GET' }).handler(
   async (): Promise<BrandSettings> => {
     const origin =
-      (await serverEnv('CERTFLOW_SSR_API_ORIGIN')) ||
-      (await serverEnv('VITE_API_BASE_URL')) ||
-      import.meta.env.VITE_API_BASE_URL ||
-      'http://127.0.0.1:8080';
+      (await serverEnv('SSR_API_ORIGIN')) || 'http://127.0.0.1:8080';
     try {
       const response = await fetch(`${origin}/api/v1/public/settings`, {
         signal: AbortSignal.timeout(2000),
