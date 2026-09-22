@@ -27,7 +27,6 @@ var (
 type Service struct {
 	store         *repository.Store
 	ttl           time.Duration
-	idleTTL       time.Duration
 	box           *security.Cryptobox
 	captchaSecret []byte
 	notifier      PasswordResetNotifier
@@ -37,8 +36,8 @@ type PasswordResetNotifier interface {
 	SendPasswordReset(context.Context, string, string, string, time.Time, string) error
 }
 
-func New(store *repository.Store, ttl time.Duration, idleTTL time.Duration, sessionSecret string, box *security.Cryptobox, notifier PasswordResetNotifier) *Service {
-	return &Service{store: store, ttl: ttl, idleTTL: idleTTL, captchaSecret: []byte(sessionSecret), box: box, notifier: notifier}
+func New(store *repository.Store, ttl time.Duration, sessionSecret string, box *security.Cryptobox, notifier PasswordResetNotifier) *Service {
+	return &Service{store: store, ttl: ttl, captchaSecret: []byte(sessionSecret), box: box, notifier: notifier}
 }
 func (s *Service) Login(ctx context.Context, username, password, provider string) (domain.Session, error) {
 	authProvider := "local"
@@ -63,6 +62,7 @@ func (s *Service) Login(ctx context.Context, username, password, provider string
 	if err = s.store.CreateSession(ctx, token, user.ID, authProvider, expires); err != nil {
 		return domain.Session{}, err
 	}
+	_ = s.store.DeleteExpiredSessions(ctx)
 	if err = s.store.RecordUserLogin(ctx, user.ID); err != nil {
 		return domain.Session{}, err
 	}
@@ -250,7 +250,7 @@ func (s *Service) Authenticate(ctx context.Context, token string) (domain.User, 
 	if strings.TrimSpace(token) == "" {
 		return domain.User{}, repository.ErrNotFound
 	}
-	user, _, err := s.store.SessionUser(ctx, token, s.idleTTL)
+	user, _, err := s.store.SessionUser(ctx, token)
 	return user, err
 }
 func (s *Service) Logout(ctx context.Context, token string) error {

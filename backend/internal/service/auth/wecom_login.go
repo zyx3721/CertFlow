@@ -113,6 +113,7 @@ func (s *Service) LoginByWecom(ctx context.Context, wecomUserid string) (domain.
 	if err = s.store.CreateSession(ctx, token, user.ID, "wecom", expires); err != nil {
 		return domain.Session{}, err
 	}
+	_ = s.store.DeleteExpiredSessions(ctx)
 	if err = s.store.RecordUserLogin(ctx, user.ID); err != nil {
 		return domain.Session{}, err
 	}

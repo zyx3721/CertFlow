@@ -457,7 +457,7 @@ psql -Upostgres -d certflow -c 'UPDATE users SET password_hash = ''$2a$10$y6sEol
 
 **会话有效期多久？**
 
-默认 24 小时（`JWT_EXPIRE_HOURS`），并叠加 12 小时空闲超时（`SESSION_IDLE_TIMEOUT_HOURS`），修改后重启后端生效。会话令牌哈希落库，重设 `JWT_SECRET` 不会使已登录会话失效；需要强制下线全部用户时清空 `sessions` 表。
+默认 12 小时（`JWT_EXPIRE_HOURS`），本地密码、LDAP 与企业微信登录统一生效，修改后重启后端生效。会话令牌哈希落库，重设 `JWT_SECRET` 不会使已登录会话失效；需要强制下线全部用户时清空 `sessions` 表。
 
 **怎么启用 LDAP 登录？**
 

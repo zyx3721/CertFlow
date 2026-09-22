@@ -324,7 +324,7 @@ export const savePkiSettings = (settings: PkiSettings) =>
   });
 
 function authHeaders() {
-  const token = window.localStorage.getItem('certflow.auth.token') ?? '';
+  const token = window.sessionStorage.getItem('certflow.auth.token') ?? '';
   return token ? { Authorization: `Bearer ${token}` } : undefined;
 }
 

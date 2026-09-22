@@ -457,7 +457,7 @@ psql -Upostgres -d certflow -c 'UPDATE users SET password_hash = ''$2a$10$y6sEol
 
 **How long do sessions last?**
 
-24 hours by default (`JWT_EXPIRE_HOURS`) with an additional 12-hour idle timeout (`SESSION_IDLE_TIMEOUT_HOURS`); restart the backend after changing them. Tokens are stored hashed, so rotating `JWT_SECRET` does not sign anyone out — truncate the `sessions` table to force a global sign-out.
+12 hours by default (`JWT_EXPIRE_HOURS`), applied uniformly to local password, LDAP and WeCom logins; restart the backend after changing them. Tokens are stored hashed, so rotating `JWT_SECRET` does not sign anyone out — truncate the `sessions` table to force a global sign-out.
 
 **How do I enable LDAP login?**
 

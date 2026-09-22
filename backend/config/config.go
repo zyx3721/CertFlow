@@ -23,8 +23,8 @@ type Config struct {
 type ServerConfig struct{ Host, Port, Mode string }
 type DatabaseConfig struct{ Host, Port, Name, User, Password, SSLMode string }
 type AuthConfig struct {
-	SessionSecret                              string
-	SessionExpireHours, SessionIdleExpireHours int
+	SessionSecret      string
+	SessionExpireHours int
 }
 type PKIConfig struct{ KeyEncryptionKey []byte }
 type CORSConfig struct{ Origin string }
@@ -49,9 +49,8 @@ func Load(logger *slog.Logger) (Config, error) {
 			SSLMode:  env("DB_SSLMODE", "disable"),
 		},
 		Auth: AuthConfig{
-			SessionSecret:          os.Getenv("JWT_SECRET"),
-			SessionExpireHours:     positiveInt("JWT_EXPIRE_HOURS", 24),
-			SessionIdleExpireHours: positiveInt("SESSION_IDLE_TIMEOUT_HOURS", 12),
+			SessionSecret:      os.Getenv("JWT_SECRET"),
+			SessionExpireHours: positiveInt("JWT_EXPIRE_HOURS", 12),
 		},
 		PKI: PKIConfig{
 			KeyEncryptionKey: key,
@@ -85,9 +84,6 @@ func (d DatabaseConfig) DSN() string {
 }
 func (a AuthConfig) SessionTTL() time.Duration {
 	return time.Duration(a.SessionExpireHours) * time.Hour
-}
-func (a AuthConfig) SessionIdleTTL() time.Duration {
-	return time.Duration(a.SessionIdleExpireHours) * time.Hour
 }
 func env(key, fallback string) string {
 	if value := strings.TrimSpace(os.Getenv(key)); value != "" {

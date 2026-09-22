@@ -193,8 +193,7 @@ DB_SSLMODE=disable
 
 # 登录与会话配置
 JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRE_HOURS=24
-SESSION_IDLE_TIMEOUT_HOURS=12
+JWT_EXPIRE_HOURS=12
 
 # PKI 私钥加密。生产环境必须提供 Base64 编码的 32 字节随机密钥
 # 生成方式：openssl rand -base64 32
@@ -319,8 +318,7 @@ DB_PASSWORD=123456ok!
 DB_SSLMODE=disable
 
 JWT_SECRET=change-me-in-production
-JWT_EXPIRE_HOURS=24
-SESSION_IDLE_TIMEOUT_HOURS=12
+JWT_EXPIRE_HOURS=12
 
 # PKI 私钥加密。生产环境必须提供 Base64 编码的 32 字节随机密钥
 # 生成方式：openssl rand -base64 32
@@ -538,8 +536,7 @@ DB_SSLMODE=disable
 
 # 登录与会话配置
 JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRE_HOURS=24
-SESSION_IDLE_TIMEOUT_HOURS=12
+JWT_EXPIRE_HOURS=12
 
 # PKI 私钥加密。生产环境必须提供 Base64 编码的 32 字节随机密钥
 # 生成方式：openssl rand -base64 32

@@ -79,7 +79,7 @@ func run() int {
 	handler := router.New(
 		cfg,
 		store,
-		authsvc.New(store, cfg.Auth.SessionTTL(), cfg.Auth.SessionIdleTTL(), cfg.Auth.SessionSecret, box, notifyService),
+		authsvc.New(store, cfg.Auth.SessionTTL(), cfg.Auth.SessionSecret, box, notifyService),
 		pkiService,
 		notifyService,
 		logger,

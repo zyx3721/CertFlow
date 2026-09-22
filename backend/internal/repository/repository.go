@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"time"
 
 	"certflow/backend/internal/domain"
 
@@ -113,11 +112,6 @@ func (s *Store) SetUserDisabled(ctx context.Context, id string, disabled bool) e
 	}
 	return nil
 }
-func (s *Store) CreateSession(ctx context.Context, token, userID, authProvider string, expires time.Time) error {
-	_, err := s.Pool.Exec(ctx, "INSERT INTO sessions(token_hash,user_id,auth_provider,expires_at) VALUES($1,$2,$3,$4)", HashToken(token), userID, authProvider, expires)
-	return err
-}
-
 func (s *Store) RecordUserLogin(ctx context.Context, userID string) error {
 	result, err := s.Pool.Exec(ctx, "UPDATE users SET last_login_at=now(),updated_at=now() WHERE id=$1", userID)
 	if err != nil {
@@ -127,28 +121,6 @@ func (s *Store) RecordUserLogin(ctx context.Context, userID string) error {
 		return ErrNotFound
 	}
 	return nil
-}
-func (s *Store) SessionUser(ctx context.Context, token string, idleTTL time.Duration) (domain.User, time.Time, error) {
-	var expires, lastSeen time.Time
-	var id string
-	var authProvider string
-	err := s.Pool.QueryRow(ctx, "SELECT user_id::text,auth_provider,expires_at,last_seen_at FROM sessions WHERE token_hash=$1", HashToken(token)).Scan(&id, &authProvider, &expires, &lastSeen)
-	if err != nil {
-		return domain.User{}, time.Time{}, ErrNotFound
-	}
-	u, err := s.FindUserByID(ctx, id)
-	if err != nil || u.Disabled || time.Now().After(expires) || (idleTTL > 0 && time.Since(lastSeen) > idleTTL) {
-		return domain.User{}, time.Time{}, ErrNotFound
-	}
-	if time.Since(lastSeen) > 5*time.Minute {
-		_, _ = s.Pool.Exec(ctx, "UPDATE sessions SET last_seen_at=now() WHERE token_hash=$1", HashToken(token))
-	}
-	u.AuthenticationProvider = authProvider
-	return u, expires, nil
-}
-func (s *Store) DeleteSession(ctx context.Context, token string) error {
-	_, err := s.Pool.Exec(ctx, "DELETE FROM sessions WHERE token_hash=$1", HashToken(token))
-	return err
 }
 func (s *Store) Audit(ctx context.Context, user domain.User, action, target, module, result, ip, detail string) {
 	_, _ = s.Pool.Exec(ctx, "INSERT INTO audit_entries(id,user_id,username,action,target,module,result,ip_address,detail) VALUES($1,NULLIF($2,'')::uuid,$3,$4,$5,$6,$7,$8,$9)", uuid.NewString(), user.ID, user.Username, action, target, module, result, ip, detail)
