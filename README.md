@@ -496,7 +496,7 @@ CertFlow/
 │   └── src/
 │       ├── components/      应用布局、通知中心、弹窗与基础 UI
 │       ├── features/        认证、PKI 业务、系统配置页面与角色编辑组件
-│       ├── lib/             认证、PKI、系统配置 API 客户端与工具
+│       ├── lib/             认证、PKI、系统配置 API 客户端与品牌、环境变量工具
 │       ├── routes/          TanStack Router 路由薄层
 │       ├── router.tsx       路由实例
 │       ├── start.ts         React Start 入口
