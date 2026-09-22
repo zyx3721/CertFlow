@@ -1010,6 +1010,26 @@ server {
 - 未配置 `JWT_SECRET` 时，后端会生成仅当前进程有效的临时密钥，不适用于生产环境。
 - 未配置或错误配置 `PKI_KEY_ENCRYPTION_KEY` 时，后端会拒绝启动。
 
+后端同时支持命令行参数，显式传入的参数优先于环境变量与 `.env` 文件；`./certflow -v` 可查看版本信息（版本、commit、构建时间），`./certflow -h` 查看全部参数。源码直接编译时版本显示为 `dev`，Release 产物与 Docker 镜像由 CI 在编译时通过 `-ldflags -X` 注入版本、commit 与构建时间。
+
+| 参数 | 等价环境变量 | 说明 |
+| --- | --- | --- |
+| `-host` | `SERVER_HOST` | 后端监听地址 |
+| `-port` | `SERVER_PORT` | 后端监听端口 |
+| `-mode` | `SERVER_MODE` | 运行模式（release/dev） |
+| `-db-host` | `DB_HOST` | PostgreSQL 主机 |
+| `-db-port` | `DB_PORT` | PostgreSQL 端口 |
+| `-db-name` | `DB_NAME` | 数据库名 |
+| `-db-user` | `DB_USER` | 数据库用户 |
+| `-db-password` | `DB_PASSWORD` | 数据库密码 |
+| `-db-sslmode` | `DB_SSLMODE` | 数据库 SSL 模式 |
+| `-jwt-secret` | `JWT_SECRET` | 会话签名密钥 |
+| `-session-ttl` | `JWT_EXPIRE_HOURS` | 会话有效期（小时） |
+| `-pki-key` | `PKI_KEY_ENCRYPTION_KEY` | 私钥加密主密钥（Base64 编码 32 字节） |
+| `-cors-origin` | `CORS_ORIGIN` | 允许的跨域来源 |
+| `-env` | 无 | 指定 `.env` 配置文件路径 |
+| `-v`、`-version` | 无 | 显示版本信息并退出 |
+
 - 数据库启动时会按文件名顺序执行尚未记录的嵌入式迁移。
 - 完整初始化结构由 `backend/pkg/database/migrations/001_init.sql` 创建：
   - 表和索引均使用幂等 DDL。

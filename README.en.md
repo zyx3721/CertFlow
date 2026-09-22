@@ -264,6 +264,26 @@ vim .env               # at minimum set JWT_SECRET and PKI_KEY_ENCRYPTION_KEY, a
 ./certflow
 ```
 
+The backend also accepts command-line flags; explicitly passed flags take priority over environment variables and the `.env` file. `./certflow -v` prints version information (version, commit, build date) and `./certflow -h` lists all flags:
+
+| Flag | Equivalent env var | Description |
+| --- | --- | --- |
+| `-host` | `SERVER_HOST` | Backend listen address |
+| `-port` | `SERVER_PORT` | Backend listen port |
+| `-mode` | `SERVER_MODE` | Run mode (release/dev) |
+| `-db-host` | `DB_HOST` | PostgreSQL host |
+| `-db-port` | `DB_PORT` | PostgreSQL port |
+| `-db-name` | `DB_NAME` | Database name |
+| `-db-user` | `DB_USER` | Database user |
+| `-db-password` | `DB_PASSWORD` | Database password |
+| `-db-sslmode` | `DB_SSLMODE` | Database SSL mode |
+| `-jwt-secret` | `JWT_SECRET` | Session signing secret |
+| `-session-ttl` | `JWT_EXPIRE_HOURS` | Session lifetime (hours) |
+| `-pki-key` | `PKI_KEY_ENCRYPTION_KEY` | Key-encryption master key (Base64-encoded 32 bytes) |
+| `-cors-origin` | `CORS_ORIGIN` | Allowed CORS origin |
+| `-env` | — | Path to the `.env` file |
+| `-v`, `-version` | — | Print version information and exit |
+
 Use systemd for long-running deployments:
 
 ```ini

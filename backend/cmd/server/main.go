@@ -3,18 +3,22 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
+	"strconv"
 	"syscall"
 	"time"
 
 	"certflow/backend/api/router"
 	"certflow/backend/config"
 	_ "certflow/backend/docs"
+	"certflow/backend/internal/buildinfo"
 	"certflow/backend/internal/domain"
 	"certflow/backend/internal/repository"
 	"certflow/backend/internal/security"
@@ -26,6 +30,93 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/robfig/cron/v3"
 )
+
+// flagValues 汇总命令行参数的显式取值，零值表示未设置
+type flagValues struct {
+	envPath    string
+	host       string
+	port       string
+	mode       string
+	dbHost     string
+	dbPort     string
+	dbName     string
+	dbUser     string
+	dbPassword string
+	dbSSLMode  string
+	jwtSecret  string
+	sessionTTL int
+	pkiKey     string
+	corsOrigin string
+}
+
+// versionText 组装 -v/-version 输出的版本信息文本
+func versionText() string {
+	return fmt.Sprintf("certflow %s\ncommit: %s\nbuild: %s\ngo: %s\n", buildinfo.Version, buildinfo.Commit, buildinfo.BuildDate, runtime.Version())
+}
+
+// setUsage 自定义 -h/--help 输出：-v 与 -version 合并一行，各参数描述统一换行缩进对齐
+func setUsage() {
+	flag.Usage = func() {
+		w := flag.CommandLine.Output()
+		fmt.Fprintf(w, "Usage of %s:\n", os.Args[0])
+		flag.VisitAll(func(f *flag.Flag) {
+			if f.Name == "version" {
+				return
+			}
+			if f.Name == "v" {
+				fmt.Fprintf(w, "  -v, -version\n    \t%s\n", f.Usage)
+				return
+			}
+			name, usage := flag.UnquoteUsage(f)
+			fmt.Fprintf(w, "  -%s %s\n    \t%s (default %q)\n", f.Name, name, usage, f.DefValue)
+		})
+	}
+}
+
+// overridesFromFlags 将命令行参数显式值映射为配置加载的覆盖键值，键名与环境变量一致
+func overridesFromFlags(v flagValues) map[string]string {
+	overrides := make(map[string]string)
+	if v.host != "" {
+		overrides["SERVER_HOST"] = v.host
+	}
+	if v.port != "" {
+		overrides["SERVER_PORT"] = v.port
+	}
+	if v.mode != "" {
+		overrides["SERVER_MODE"] = v.mode
+	}
+	if v.dbHost != "" {
+		overrides["DB_HOST"] = v.dbHost
+	}
+	if v.dbPort != "" {
+		overrides["DB_PORT"] = v.dbPort
+	}
+	if v.dbName != "" {
+		overrides["DB_NAME"] = v.dbName
+	}
+	if v.dbUser != "" {
+		overrides["DB_USER"] = v.dbUser
+	}
+	if v.dbPassword != "" {
+		overrides["DB_PASSWORD"] = v.dbPassword
+	}
+	if v.dbSSLMode != "" {
+		overrides["DB_SSLMODE"] = v.dbSSLMode
+	}
+	if v.jwtSecret != "" {
+		overrides["JWT_SECRET"] = v.jwtSecret
+	}
+	if v.sessionTTL > 0 {
+		overrides["JWT_EXPIRE_HOURS"] = strconv.Itoa(v.sessionTTL)
+	}
+	if v.pkiKey != "" {
+		overrides["PKI_KEY_ENCRYPTION_KEY"] = v.pkiKey
+	}
+	if v.corsOrigin != "" {
+		overrides["CORS_ORIGIN"] = v.corsOrigin
+	}
+	return overrides
+}
 
 // @title CertFlow API
 // @version 1.0
@@ -39,9 +130,53 @@ func main() {
 }
 
 func run() int {
-	_ = godotenv.Load(filepath.Join(".", ".env"))
+	showVersion := flag.Bool("v", false, "显示版本信息并退出")
+	flag.BoolVar(showVersion, "version", false, "显示版本信息并退出")
+	envPath := flag.String("env", "", ".env 配置文件路径，默认加载工作目录下的 .env")
+	host := flag.String("host", "", "后端监听地址，等价环境变量 SERVER_HOST")
+	port := flag.String("port", "", "后端监听端口，等价环境变量 SERVER_PORT")
+	mode := flag.String("mode", "", "运行模式（release/dev），等价环境变量 SERVER_MODE")
+	dbHost := flag.String("db-host", "", "PostgreSQL 主机，等价环境变量 DB_HOST")
+	dbPort := flag.String("db-port", "", "PostgreSQL 端口，等价环境变量 DB_PORT")
+	dbName := flag.String("db-name", "", "数据库名，等价环境变量 DB_NAME")
+	dbUser := flag.String("db-user", "", "数据库用户，等价环境变量 DB_USER")
+	dbPassword := flag.String("db-password", "", "数据库密码，等价环境变量 DB_PASSWORD")
+	dbSSLMode := flag.String("db-sslmode", "", "数据库 SSL 模式，等价环境变量 DB_SSLMODE")
+	jwtSecret := flag.String("jwt-secret", "", "会话签名密钥，等价环境变量 JWT_SECRET")
+	sessionTTL := flag.Int("session-ttl", 0, "会话有效期（小时），等价环境变量 JWT_EXPIRE_HOURS")
+	pkiKey := flag.String("pki-key", "", "私钥加密主密钥（Base64 编码 32 字节），等价环境变量 PKI_KEY_ENCRYPTION_KEY")
+	corsOrigin := flag.String("cors-origin", "", "允许的跨域来源，等价环境变量 CORS_ORIGIN")
+	setUsage()
+	flag.Parse()
+
+	if *showVersion {
+		fmt.Print(versionText())
+		return 0
+	}
+
+	flags := flagValues{
+		envPath:    *envPath,
+		host:       *host,
+		port:       *port,
+		mode:       *mode,
+		dbHost:     *dbHost,
+		dbPort:     *dbPort,
+		dbName:     *dbName,
+		dbUser:     *dbUser,
+		dbPassword: *dbPassword,
+		dbSSLMode:  *dbSSLMode,
+		jwtSecret:  *jwtSecret,
+		sessionTTL: *sessionTTL,
+		pkiKey:     *pkiKey,
+		corsOrigin: *corsOrigin,
+	}
+	if flags.envPath != "" {
+		_ = godotenv.Load(flags.envPath)
+	} else {
+		_ = godotenv.Load(filepath.Join(".", ".env"))
+	}
 	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	cfg, err := config.Load(logger)
+	cfg, err := config.LoadWithOverrides(overridesFromFlags(flags), logger)
 	if err != nil {
 		logger.Error("Load configuration failed", "error", err)
 		return 1
@@ -87,7 +222,7 @@ func run() int {
 	server := &http.Server{Addr: cfg.Server.Addr(), Handler: handler, ReadHeaderTimeout: 5 * time.Second}
 	serverErrors := make(chan error, 1)
 	go func() {
-		logger.Info("CertFlow backend listening", "addr", cfg.Server.Addr())
+		logger.Info("CertFlow backend listening", "addr", cfg.Server.Addr(), "version", buildinfo.Version)
 		serverErrors <- server.ListenAndServe()
 	}()
 	signals := make(chan os.Signal, 1)

@@ -68,9 +68,14 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: 交叉编译 Backend 二进制文件
+        id: backend_build
         working-directory: backend
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
+          BUILD_VERSION=${GITHUB_REF_NAME}
+          BUILD_COMMIT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(TZ=Asia/Shanghai date +"%Y-%m-%dT%H:%M:%S%:z")
+          LDFLAGS="-s -w -X certflow/backend/internal/buildinfo.Version=${BUILD_VERSION} -X certflow/backend/internal/buildinfo.Commit=${BUILD_COMMIT} -X certflow/backend/internal/buildinfo.BuildDate=${BUILD_DATE}"
           mkdir -p dist
 
           prepare_package() {
@@ -81,48 +86,50 @@ jobs:
           }
 
           echo "🔨 编译 Linux AMD64..."
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow ./cmd/server/main.go
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow ./cmd/server/main.go
           prepare_package "dist/linux_amd64"
           mv certflow dist/linux_amd64/
           tar -czf dist/certflow_${VERSION}_linux_amd64.tar.gz -C dist linux_amd64
           rm -rf dist/linux_amd64
 
           echo "🔨 编译 Linux ARM64..."
-          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow ./cmd/server/main.go
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow ./cmd/server/main.go
           prepare_package "dist/linux_arm64"
           mv certflow dist/linux_arm64/
           tar -czf dist/certflow_${VERSION}_linux_arm64.tar.gz -C dist linux_arm64
           rm -rf dist/linux_arm64
 
           echo "🔨 编译 macOS AMD64..."
-          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow ./cmd/server/main.go
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow ./cmd/server/main.go
           prepare_package "dist/darwin_amd64"
           mv certflow dist/darwin_amd64/
           tar -czf dist/certflow_${VERSION}_darwin_amd64.tar.gz -C dist darwin_amd64
           rm -rf dist/darwin_amd64
 
           echo "🔨 编译 macOS ARM64..."
-          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow ./cmd/server/main.go
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow ./cmd/server/main.go
           prepare_package "dist/darwin_arm64"
           mv certflow dist/darwin_arm64/
           tar -czf dist/certflow_${VERSION}_darwin_arm64.tar.gz -C dist darwin_arm64
           rm -rf dist/darwin_arm64
 
           echo "🔨 编译 Windows AMD64..."
-          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow.exe ./cmd/server/main.go
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow.exe ./cmd/server/main.go
           prepare_package "dist/windows_amd64"
           mv certflow.exe dist/windows_amd64/
           cd dist && zip -r certflow_${VERSION}_windows_amd64.zip windows_amd64 && cd ..
           rm -rf dist/windows_amd64
 
           echo "🔨 编译 Windows ARM64..."
-          GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="-s -w" -o certflow.exe ./cmd/server/main.go
+          GOOS=windows GOARCH=arm64 CGO_ENABLED=0 go build -ldflags="${LDFLAGS}" -o certflow.exe ./cmd/server/main.go
           prepare_package "dist/windows_arm64"
           mv certflow.exe dist/windows_arm64/
           cd dist && zip -r certflow_${VERSION}_windows_arm64.zip windows_arm64 && cd ..
           rm -rf dist/windows_arm64
 
           echo "✅ 编译完成"
+          echo "commit=${BUILD_COMMIT}" >> "$GITHUB_OUTPUT"
+          echo "build_date=${BUILD_DATE}" >> "$GITHUB_OUTPUT"
 
       - name: 构建 Frontend Nitro SSR 产物包
         working-directory: frontend
@@ -159,6 +166,8 @@ jobs:
           provenance: false
           build-args: |
             APP_VERSION=${{ github.ref_name }}
+            APP_COMMIT=${{ steps.backend_build.outputs.commit }}
+            APP_BUILD_DATE=${{ steps.backend_build.outputs.build_date }}
             NPM_REGISTRY=https://registry.npmjs.org
             GOPROXY=https://proxy.golang.org,direct
 

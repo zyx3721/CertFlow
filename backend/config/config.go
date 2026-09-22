@@ -29,33 +29,45 @@ type AuthConfig struct {
 type PKIConfig struct{ KeyEncryptionKey []byte }
 type CORSConfig struct{ Origin string }
 
+// Load 从环境变量加载配置。
 func Load(logger *slog.Logger) (Config, error) {
-	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(os.Getenv("PKI_KEY_ENCRYPTION_KEY")))
+	return LoadWithOverrides(nil, logger)
+}
+
+// LoadWithOverrides 加载配置，overrides 中显式提供的键优先于环境变量，键名与环境变量保持一致。
+func LoadWithOverrides(overrides map[string]string, logger *slog.Logger) (Config, error) {
+	lookup := func(key, fallback string) string {
+		if value, ok := overrides[key]; ok && strings.TrimSpace(value) != "" {
+			return value
+		}
+		return env(key, fallback)
+	}
+	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(lookup("PKI_KEY_ENCRYPTION_KEY", "")))
 	if err != nil || len(key) != 32 {
 		return Config{}, fmt.Errorf("PKI_KEY_ENCRYPTION_KEY must be a base64 encoded 32-byte key")
 	}
 	cfg := Config{
 		Server: ServerConfig{
-			Host: env("SERVER_HOST", "127.0.0.1"),
-			Port: env("SERVER_PORT", "8080"),
-			Mode: env("SERVER_MODE", "release"),
+			Host: lookup("SERVER_HOST", "127.0.0.1"),
+			Port: lookup("SERVER_PORT", "8080"),
+			Mode: lookup("SERVER_MODE", "release"),
 		},
 		Database: DatabaseConfig{
-			Host:     env("DB_HOST", "localhost"),
-			Port:     env("DB_PORT", "5432"),
-			Name:     env("DB_NAME", "certflow"),
-			User:     env("DB_USER", "certflow"),
-			Password: env("DB_PASSWORD", "certflow_dev"),
-			SSLMode:  env("DB_SSLMODE", "disable"),
+			Host:     lookup("DB_HOST", "localhost"),
+			Port:     lookup("DB_PORT", "5432"),
+			Name:     lookup("DB_NAME", "certflow"),
+			User:     lookup("DB_USER", "certflow"),
+			Password: lookup("DB_PASSWORD", "certflow_dev"),
+			SSLMode:  lookup("DB_SSLMODE", "disable"),
 		},
 		Auth: AuthConfig{
-			SessionSecret:      os.Getenv("JWT_SECRET"),
-			SessionExpireHours: positiveInt("JWT_EXPIRE_HOURS", 12),
+			SessionSecret:      lookup("JWT_SECRET", ""),
+			SessionExpireHours: positiveInt(lookup, "JWT_EXPIRE_HOURS", 12),
 		},
 		PKI: PKIConfig{
 			KeyEncryptionKey: key,
 		},
-		CORS: CORSConfig{Origin: env("CORS_ORIGIN", "http://localhost:5173")},
+		CORS: CORSConfig{Origin: lookup("CORS_ORIGIN", "http://localhost:5173")},
 	}
 	if err := cfg.Database.Validate(); err != nil {
 		return Config{}, err
@@ -92,8 +104,8 @@ func env(key, fallback string) string {
 	return fallback
 }
 
-func positiveInt(key string, fallback int) int {
-	value, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key)))
+func positiveInt(lookup func(string, string) string, key string, fallback int) int {
+	value, err := strconv.Atoi(strings.TrimSpace(lookup(key, "")))
 	if err != nil || value <= 0 {
 		return fallback
 	}

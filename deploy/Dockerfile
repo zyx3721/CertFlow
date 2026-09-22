@@ -23,6 +23,10 @@ WORKDIR /src/backend
 ARG GOPROXY=https://goproxy.cn,direct
 ENV GOPROXY=${GOPROXY}
 
+ARG APP_VERSION=dev
+ARG APP_COMMIT=unknown
+ARG APP_BUILD_DATE=unknown
+
 COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
@@ -30,7 +34,7 @@ COPY backend/ ./
 
 ARG CGO_ENABLED=0
 ENV CGO_ENABLED=${CGO_ENABLED}
-RUN go build -o certflow-backend ./cmd/server/main.go
+RUN go build -ldflags="-s -w -X certflow/backend/internal/buildinfo.Version=${APP_VERSION} -X certflow/backend/internal/buildinfo.Commit=${APP_COMMIT} -X certflow/backend/internal/buildinfo.BuildDate=${APP_BUILD_DATE}" -o certflow-backend ./cmd/server/main.go
 
 ############################
 # 3) runtime
