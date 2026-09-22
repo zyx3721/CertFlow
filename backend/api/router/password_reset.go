@@ -97,6 +97,14 @@ func (r *Router) passwordResetConfirm(w http.ResponseWriter, q *http.Request) {
 		write(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 		return
 	}
-	r.store.Audit(q.Context(), user, "找回密码成功", user.Username, "auth", "success", clientIP(q), "用户 "+user.Username+" 已通过找回密码流程修改密码")
+	cleared, clearErr := r.auth.ClearLoginFailures(q.Context(), body.Username)
+	if clearErr != nil {
+		r.logger.Error("Clear login failures failed", "error", clearErr)
+	}
+	detail := "用户 " + user.Username + " 已通过找回密码流程修改密码"
+	if cleared > 0 {
+		detail += "并解除登录失败锁定"
+	}
+	r.store.Audit(q.Context(), user, "找回密码成功", user.Username, "auth", "success", clientIP(q), detail)
 	write(w, http.StatusOK, map[string]string{"status": "ok"})
 }

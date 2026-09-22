@@ -1082,7 +1082,7 @@ server {
 - `GET /api/v1/auth/password-reset/captcha`：获取一次性图形验证码
 - `POST /api/v1/auth/password-reset/verify`：校验账号和图形验证码，返回短时验证令牌与可用媒介
 - `POST /api/v1/auth/password-reset/send`：校验用户名、验证令牌和账号绑定邮箱后发送找回密码验证码
-- `POST /api/v1/auth/password-reset/confirm`：校验用户名、验证令牌和邮件验证码后重置本地账号密码
+- `POST /api/v1/auth/password-reset/confirm`：校验用户名、验证令牌和邮件验证码后重置本地账号密码，若该账号存在登录失败锁定记录则一并解除
 
 ## 7.4 证书颁发机构
 
