@@ -312,9 +312,6 @@ export function ForgotPasswordPage() {
                     <input
                       value={code}
                       onChange={event => setCode(event.target.value)}
-                      onFocus={() => {
-                        if (cooldown > 0) setError(`验证码已发送，请于 ${cooldown} 秒后再试`);
-                      }}
                       className="certflow-auth-input min-w-0 flex-1"
                       placeholder="请输入收到的验证码"
                     />
