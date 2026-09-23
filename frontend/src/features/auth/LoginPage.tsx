@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  consumeAuthExpired,
   fetchCurrentUser,
   fetchPublicAuthProviders,
   fetchWecomAuthorizeUrl,
@@ -79,6 +80,12 @@ export function LoginPage() {
     applyZlTheme(theme);
     persistZlTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (consumeAuthExpired()) {
+      toast.error('登录会话已过期，请重新登录');
+    }
+  }, []);
 
   useEffect(() => {
     setWecomEmbedFailed(false);
