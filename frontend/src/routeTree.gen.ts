@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WecomQrCallbackRouteImport } from './routes/wecom-qr-callback'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
@@ -21,6 +22,11 @@ import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authent
 import { Route as AuthenticatedCasRouteImport } from './routes/_authenticated/cas'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 
+const WecomQrCallbackRoute = WecomQrCallbackRouteImport.update({
+  id: '/wecom-qr-callback',
+  path: '/wecom-qr-callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/wecom-qr-callback': typeof WecomQrCallbackRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/cas': typeof AuthenticatedCasRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
@@ -92,6 +99,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/wecom-qr-callback': typeof WecomQrCallbackRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/cas': typeof AuthenticatedCasRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/wecom-qr-callback': typeof WecomQrCallbackRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/cas': typeof AuthenticatedCasRoute
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/wecom-qr-callback'
     | '/audit'
     | '/cas'
     | '/certificates'
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
   to:
     | '/forgot-password'
     | '/login'
+    | '/wecom-qr-callback'
     | '/audit'
     | '/cas'
     | '/certificates'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/forgot-password'
     | '/login'
+    | '/wecom-qr-callback'
     | '/_authenticated/audit'
     | '/_authenticated/cas'
     | '/_authenticated/certificates'
@@ -159,10 +171,18 @@ export interface RootRouteChildren {
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  WecomQrCallbackRoute: typeof WecomQrCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/wecom-qr-callback': {
+      id: '/wecom-qr-callback'
+      path: '/wecom-qr-callback'
+      fullPath: '/wecom-qr-callback'
+      preLoaderRoute: typeof WecomQrCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  WecomQrCallbackRoute: WecomQrCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

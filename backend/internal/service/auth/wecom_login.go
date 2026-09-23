@@ -5,33 +5,38 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"strings"
 	"time"
 
 	"certflow/backend/internal/domain"
 	"certflow/backend/internal/repository"
 )
 
-// WecomAuthorizeURL 返回企业微信扫码授权地址。
-// 直连模式返回企微 wwlogin 页面（state 由本系统签名），
-// 统一认证中心模式返回认证中心登录页地址。
-func (s *Service) WecomAuthorizeURL(ctx context.Context, scheme, host string) (string, error) {
+// WecomAuthorizePayload 企业微信扫码登录跳转地址与内嵌二维码渲染参数，EmbedURL 为空表示仅支持整页跳转。
+type WecomAuthorizePayload struct {
+	AuthMode     string
+	URL          string
+	EmbedURL     string
+	State        string
+	CallbackPath string
+}
+
+// NewWecomAuthorizePayload 构造企业微信扫码登录跳转与内嵌二维码参数：SSO 复用认证中心入口地址，直连签发 state 并区分整页与内嵌回跳。
+func (s *Service) NewWecomAuthorizePayload(ctx context.Context, scheme, host string) (WecomAuthorizePayload, error) {
 	cfg, err := s.runtimeWecomConfig(ctx)
 	if err != nil {
-		return "", err
+		return WecomAuthorizePayload{}, err
 	}
 	if !cfg.Enabled {
-		return "", ErrWecomNotEnabled
+		return WecomAuthorizePayload{}, ErrWecomNotEnabled
 	}
 	if cfg.Mode == WecomModeSSO {
-		return strings.TrimSuffix(cfg.SSOBaseURL, "/") + "/login?app=" + queryEscape(cfg.SSOAppID), nil
+		return cfg.wecomAuthorizePayload(scheme, host, ""), nil
 	}
 	state, err := s.newWecomState(ctx, "login", "")
 	if err != nil {
-		return "", err
+		return WecomAuthorizePayload{}, err
 	}
-	redirectURI := cfg.wecomCallbackRedirectURL(scheme, host)
-	return cfg.authorizeURL(redirectURI, state), nil
+	return cfg.wecomAuthorizePayload(scheme, host, state), nil
 }
 
 // WecomBindURL 为当前登录用户签发绑定用授权地址。
@@ -44,7 +49,7 @@ func (s *Service) WecomBindURL(ctx context.Context, user domain.User, scheme, ho
 		return "", ErrWecomNotEnabled
 	}
 	if cfg.Mode == WecomModeSSO {
-		return strings.TrimSuffix(cfg.SSOBaseURL, "/") + "/login?app=" + queryEscape(cfg.SSOAppID), nil
+		return cfg.ssoLoginURL(), nil
 	}
 	state, err := s.newWecomState(ctx, "bind", user.ID)
 	if err != nil {

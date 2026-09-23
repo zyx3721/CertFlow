@@ -487,9 +487,9 @@ First fill in the connection parameters under "System settings → Authenticatio
 
 **How do I enable WeCom QR login?**
 
-Create a self-built app in the WeCom admin console and note the AgentID and Secret; add this system's domain to the app's trusted web authorization domain and add the server egress IP to the trusted IP list. Then, under "System settings → Authentication → WeCom", choose the "Direct" mode, fill in the corp ID, AgentID and Secret, and enable (the redirect prefix can be left empty to infer from the current access address). Users sign in with their password once, use "Bind WeCom" in the top-right menu to scan the QR code, and can then choose WeCom QR login on the login page.
+Create a self-built app in the WeCom admin console and note the AgentID and Secret; add this system's domain to the app's trusted web authorization domain and add the server egress IP to the trusted IP list. Then, under "System settings → Authentication → WeCom", choose the "Direct" mode, fill in the corp ID, AgentID and Secret, and enable (the redirect prefix can be left empty to infer from the current access address). Users sign in with their password once, use "Bind WeCom" in the top-right menu to scan the QR code, and can then choose WeCom QR login on the login page; once WeCom is selected the login page renders the QR code inline by default and automatically falls back to the full-page redirect when configuration is broken.
 
-If your organization already runs a unified auth center (wecom-auth-center), switch the "Auth mode" to "Unified auth center" and fill in the center's address, app ID and app secret; on the center side, register this system's `domain` (external address) and `callback_path` (`/login`). Multiple internal systems can share one WeCom app configuration while binding and login flows stay identical.
+If your organization already runs a unified auth center (wecom-auth-center), switch the "Auth mode" to "Unified auth center" and fill in the center's address, app ID and app secret; on the center side, register this system's `domain` (external address) and `callback_path` (`/wecom-qr-callback`). Multiple internal systems can share one WeCom app configuration while binding and login flows stay identical.
 
 **Can the database be moved directly?**
 

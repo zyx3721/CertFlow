@@ -23,6 +23,9 @@ const (
 	defaultWecomStateTTL = 5 * time.Minute
 )
 
+// WecomEmbedCallbackPath 内嵌二维码登录的回跳路由路径，与整页登录回跳的 /login 区分
+const WecomEmbedCallbackPath = "/wecom-qr-callback"
+
 var (
 	ErrWecomNotEnabled = errors.New("企业微信认证未启用")
 	ErrWecomNotBound   = errors.New("该企业微信账号尚未绑定系统用户")
@@ -153,10 +156,35 @@ func verifyWecomState(secret, state, purpose string) (wecomState, error) {
 
 // wecomCallbackRedirectURL 回调落地页固定为前端登录路由：配置了前缀用前缀，否则按当前访问地址推断。
 func (c WecomConfig) wecomCallbackRedirectURL(scheme, host string) string {
+	return c.wecomCallbackRedirectURLPath(scheme, host, "/login")
+}
+
+// wecomCallbackRedirectURLPath 回调落地页按指定路径构造：配置了前缀用前缀，否则按当前访问地址推断。
+func (c WecomConfig) wecomCallbackRedirectURLPath(scheme, host, path string) string {
 	if c.RedirectPrefix != "" {
-		return strings.TrimRight(c.RedirectPrefix, "/") + "/login"
+		return strings.TrimRight(c.RedirectPrefix, "/") + path
 	}
-	return scheme + "://" + host + "/login"
+	return scheme + "://" + host + path
+}
+
+// ssoLoginURL 构造统一认证中心登录入口地址。
+func (c WecomConfig) ssoLoginURL() string {
+	return strings.TrimSuffix(c.SSOBaseURL, "/") + "/login?app=" + queryEscape(c.SSOAppID)
+}
+
+// wecomAuthorizePayload 按认证方式构造登录跳转地址与内嵌二维码参数：SSO 复用认证中心入口地址，直连区分整页与内嵌回跳并携带已签发 state。
+func (c WecomConfig) wecomAuthorizePayload(scheme, host, state string) WecomAuthorizePayload {
+	if c.Mode == WecomModeSSO {
+		target := c.ssoLoginURL()
+		return WecomAuthorizePayload{AuthMode: WecomModeSSO, URL: target, EmbedURL: target, CallbackPath: WecomEmbedCallbackPath}
+	}
+	return WecomAuthorizePayload{
+		AuthMode:     WecomModeDirect,
+		URL:          c.authorizeURL(c.wecomCallbackRedirectURLPath(scheme, host, "/login"), state),
+		EmbedURL:     c.authorizeURL(c.wecomCallbackRedirectURLPath(scheme, host, WecomEmbedCallbackPath), state),
+		State:        state,
+		CallbackPath: WecomEmbedCallbackPath,
+	}
 }
 
 // authorizeURL 构造企微扫码授权页地址。

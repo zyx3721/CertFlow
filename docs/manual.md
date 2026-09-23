@@ -994,7 +994,7 @@ server {
   - AD/LDAP：通过企业目录服务实现统一身份认证，仅允许已创建且未禁用的同名平台用户登录。
   - 企业微信：支持「直连企业微信」与「统一认证中心」两种方式。
     - 直连方式需在企业微信管理后台创建自建应用，填写企业 ID、AgentId 与应用 Secret，并在应用中配置网页授权可信域名与企业可信 IP。
-    - 统一认证中心方式需在认证中心为 CertFlow 登记应用标识、回调地址（本系统登录页 `/login`）与应用 Secret，本系统仅保存应用标识与 Secret，企业微信凭据全部保留在认证中心。
+    - 统一认证中心方式需在认证中心为 CertFlow 登记应用标识、回调地址（建议为本系统中转路由 `/wecom-qr-callback`）与应用 Secret，本系统仅保存应用标识与 Secret，企业微信凭据全部保留在认证中心。登录页内嵌渲染时 iframe 直接加载认证中心登录入口，认证中心需允许被本系统页面以 iframe 嵌入（调整 `X-Frame-Options` / CSP `frame-ancestors`）；扫码确认后认证中心回跳中转路由并携带 ticket，iframe 内由登录页同源读取后完成登录，`callback_path` 未改为中转路由时登录页检测到整页回跳会自动降级为跳转方式。
     - 应用 Secret 加密保存且不回显，留空保存表示沿用旧值；启用前会按所选方式校验必填项。
 
 ### 5.4.2 操作审计
@@ -1069,7 +1069,7 @@ server {
 - `POST /api/v1/auth/logout`：注销当前 Bearer Token 对应会话
 - `GET /api/v1/auth/me`：获取当前用户、角色与有效权限
 - `POST /api/v1/users/change-password`：修改当前登录用户的密码；新密码不得与当前密码相同
-- `GET /api/v1/auth/wecom/authorize`：获取企业微信扫码授权地址；直连模式返回企微 wwlogin 页面，统一认证中心模式返回认证中心登录页
+- `GET /api/v1/auth/wecom/authorize`：生成企业微信 Web 扫码登录页地址（含防伪 state）与内嵌二维码渲染参数（`iframe_url`、回跳路径 `/wecom-qr-callback`），登录页默认内嵌渲染二维码，配置异常时自动回退整页跳转；需已启用企业微信认证，无需认证
 - `POST /api/v1/auth/wecom/callback`：企业微信扫码登录回调（直连模式），校验 state 并用授权码换取企微 userid，仅允许已绑定平台用户的企业微信账号登录
 - `POST /api/v1/auth/wecom/sso/callback`：企业微信扫码登录回调（统一认证中心模式），使用 ticket 调用认证中心换取企微 userid 后建立会话
 - `GET /api/v1/auth/wecom/bind-url`：为当前登录用户签发绑定用扫码授权地址

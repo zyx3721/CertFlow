@@ -336,7 +336,7 @@ const docTemplate = `{
         },
         "/api/v1/auth/wecom/authorize": {
             "get": {
-                "description": "根据企业微信认证配置返回扫码登录地址，直连模式返回企微 wwlogin 页面，统一认证中心模式返回认证中心登录页。",
+                "description": "生成企业微信 Web 扫码登录页地址（含防伪 state）与内嵌二维码渲染参数（iframe_url、回跳路径 /wecom-qr-callback），登录页默认内嵌渲染二维码，配置异常时自动回退整页跳转；需已启用企业微信认证，无需认证。",
                 "produces": [
                     "application/json"
                 ],
@@ -4050,6 +4050,12 @@ const docTemplate = `{
                 "iconData": {
                     "type": "string"
                 },
+                "loginLockoutMinutes": {
+                    "type": "integer"
+                },
+                "loginMaxFailures": {
+                    "type": "integer"
+                },
                 "loginName": {
                     "type": "string"
                 },
@@ -4202,9 +4208,29 @@ const docTemplate = `{
                 }
             }
         },
+        "router.wecomAuthorizeEmbed": {
+            "type": "object",
+            "properties": {
+                "auth_mode": {
+                    "type": "string"
+                },
+                "callback_path": {
+                    "type": "string"
+                },
+                "iframe_url": {
+                    "type": "string"
+                },
+                "state": {
+                    "type": "string"
+                }
+            }
+        },
         "router.wecomAuthorizeResponse": {
             "type": "object",
             "properties": {
+                "embed": {
+                    "$ref": "#/definitions/router.wecomAuthorizeEmbed"
+                },
                 "url": {
                     "type": "string"
                 }

@@ -310,10 +310,28 @@ function manualAuthHeaders(): HeadersInit {
 
 export type WecomAuthorizeResponse = { url: string };
 
-export type WecomBinding = { bound: boolean; wecomUserid?: string };
+// WecomAuthorizeEmbed 内嵌二维码登录参数：iframe 地址、回跳路径与直连模式签名 state
+export type WecomAuthorizeEmbed = {
+  auth_mode: 'direct' | 'sso';
+  iframe_url: string;
+  state?: string;
+  callback_path: string;
+};
 
-export const fetchWecomAuthorizeUrl = () =>
-  api<WecomAuthorizeResponse>('/api/v1/auth/wecom/authorize', { auth: false });
+// fetchWecomAuthorize 获取企业微信扫码登录跳转地址与内嵌二维码参数（公开接口）
+export async function fetchWecomAuthorize() {
+  return api<{ url: string; embed?: WecomAuthorizeEmbed }>('/api/v1/auth/wecom/authorize', {
+    auth: false,
+  });
+}
+
+// fetchWecomAuthorizeUrl 获取企业微信扫码登录页地址（公开接口，整页跳转降级用）
+export async function fetchWecomAuthorizeUrl() {
+  const response = await fetchWecomAuthorize();
+  return { url: response.url } satisfies WecomAuthorizeResponse;
+}
+
+export type WecomBinding = { bound: boolean; wecomUserid?: string };
 
 export const fetchWecomBindUrl = () =>
   api<WecomAuthorizeResponse>('/api/v1/auth/wecom/bind-url', {

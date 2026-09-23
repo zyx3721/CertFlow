@@ -9,8 +9,18 @@ import (
 	authsvc "certflow/backend/internal/service/auth"
 )
 
+// wecomAuthorizeEmbed 内嵌二维码登录参数：iframe 地址与回跳路径，直连模式附带签名 state
+type wecomAuthorizeEmbed struct {
+	AuthMode     string `json:"auth_mode"`
+	IframeURL    string `json:"iframe_url"`
+	State        string `json:"state,omitempty"`
+	CallbackPath string `json:"callback_path"`
+}
+
+// wecomAuthorizeResponse 登录跳转地址与内嵌二维码参数，embed 为空表示仅支持整页跳转
 type wecomAuthorizeResponse struct {
-	URL string `json:"url"`
+	URL   string               `json:"url"`
+	Embed *wecomAuthorizeEmbed `json:"embed,omitempty"`
 }
 
 type wecomCallbackRequest struct {
@@ -48,19 +58,28 @@ func requestHost(request *http.Request) string {
 
 // swaggerWecomAuthorize godoc
 // @Summary 获取企业微信扫码授权地址
-// @Description 根据企业微信认证配置返回扫码登录地址，直连模式返回企微 wwlogin 页面，统一认证中心模式返回认证中心登录页。
+// @Description 生成企业微信 Web 扫码登录页地址（含防伪 state）与内嵌二维码渲染参数（iframe_url、回跳路径 /wecom-qr-callback），登录页默认内嵌渲染二维码，配置异常时自动回退整页跳转；需已启用企业微信认证，无需认证。
 // @Tags Auth
 // @Produce json
 // @Success 200 {object} wecomAuthorizeResponse
 // @Failure 400 {object} errorDocResponse
 // @Router /api/v1/auth/wecom/authorize [get]
 func (r *Router) wecomAuthorize(w http.ResponseWriter, q *http.Request) {
-	url, err := r.auth.WecomAuthorizeURL(q.Context(), requestScheme(q), requestHost(q))
+	payload, err := r.auth.NewWecomAuthorizePayload(q.Context(), requestScheme(q), requestHost(q))
 	if err != nil {
 		write(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
 		return
 	}
-	write(w, http.StatusOK, wecomAuthorizeResponse{URL: url})
+	response := wecomAuthorizeResponse{URL: payload.URL}
+	if payload.EmbedURL != "" {
+		response.Embed = &wecomAuthorizeEmbed{
+			AuthMode:     payload.AuthMode,
+			IframeURL:    payload.EmbedURL,
+			State:        payload.State,
+			CallbackPath: payload.CallbackPath,
+		}
+	}
+	write(w, http.StatusOK, response)
 }
 
 // swaggerWecomCallback godoc
