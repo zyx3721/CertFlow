@@ -514,35 +514,24 @@ export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
   );
 }
 
+const sectionDefaultKeys: Record<BaseSection, ReadonlyArray<keyof PkiSettings>> = {
+  brand: ['siteName', 'loginName', 'appName', 'appSubtitle', 'iconData'],
+  security: [
+    'resetCodeTtlMinutes',
+    'resetCaptchaTtlMinutes',
+    'passwordResetSendCooldownMinutes',
+    'passwordResetRateLimitMinutes',
+    'wecomStateTtlMinutes',
+    'loginMaxFailures',
+    'loginLockoutMinutes',
+  ],
+  basic: ['renewDays', 'autoRenew', 'expiryNotificationDays', 'expiryNotificationCron'],
+  crl: ['crlEnabled', 'crlUrl', 'crlIntervalHours'],
+  ocsp: ['ocspEnabled', 'ocspUrl'],
+};
+
 function sectionDefaults(section: BaseSection): Partial<PkiSettings> {
-  if (section === 'brand')
-    return {
-      siteName: defaults.siteName,
-      loginName: defaults.loginName,
-      appName: defaults.appName,
-      appSubtitle: defaults.appSubtitle,
-      iconData: defaults.iconData,
-    };
-  if (section === 'security')
-    return {
-      resetCodeTtlMinutes: defaults.resetCodeTtlMinutes,
-      resetCaptchaTtlMinutes: defaults.resetCaptchaTtlMinutes,
-      passwordResetSendCooldownMinutes: defaults.passwordResetSendCooldownMinutes,
-      passwordResetRateLimitMinutes: defaults.passwordResetRateLimitMinutes,
-      wecomStateTtlMinutes: defaults.wecomStateTtlMinutes,
-    };
-  if (section === 'basic')
-    return {
-      renewDays: defaults.renewDays,
-      autoRenew: defaults.autoRenew,
-      expiryNotificationDays: defaults.expiryNotificationDays,
-      expiryNotificationCron: defaults.expiryNotificationCron,
-    };
-  if (section === 'crl')
-    return {
-      crlEnabled: defaults.crlEnabled,
-      crlUrl: defaults.crlUrl,
-      crlIntervalHours: defaults.crlIntervalHours,
-    };
-  return { ocspEnabled: defaults.ocspEnabled, ocspUrl: defaults.ocspUrl };
+  return Object.fromEntries(
+    sectionDefaultKeys[section].map(key => [key, defaults[key]]),
+  ) as Partial<PkiSettings>;
 }
