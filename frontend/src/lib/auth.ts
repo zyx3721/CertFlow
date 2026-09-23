@@ -363,12 +363,6 @@ export async function fetchWecomAuthorize() {
   });
 }
 
-// fetchWecomAuthorizeUrl 获取企业微信扫码登录页地址（公开接口，整页跳转降级用）
-export async function fetchWecomAuthorizeUrl() {
-  const response = await fetchWecomAuthorize();
-  return { url: response.url } satisfies WecomAuthorizeResponse;
-}
-
 export type WecomBinding = { bound: boolean; wecomUserid?: string };
 
 export const fetchWecomBindUrl = () =>

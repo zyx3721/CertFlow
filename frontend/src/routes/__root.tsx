@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useLocation,
   useRouter,
 } from '@tanstack/react-router';
 import {
@@ -189,12 +190,18 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const [booting, setBooting] = useState(true);
+  const location = useLocation();
+  const search = (location.search ?? {}) as Record<string, string | undefined>;
+  const skipBoot =
+    location.pathname.endsWith('/wecom-qr-callback') ||
+    (location.pathname.endsWith('/login') && Boolean(search.ticket || search.code));
+  const [booting, setBooting] = useState(!skipBoot);
 
   useEffect(() => {
+    if (!booting) return;
     const timer = window.setTimeout(() => setBooting(false), 520);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [booting]);
 
   return (
     <QueryClientProvider client={queryClient}>
