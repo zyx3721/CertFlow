@@ -89,10 +89,7 @@ const cards = [
   },
 ];
 
-const settingKeys = [pkiQueryKeys.settings] as const;
-
 export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
-  usePageRefresh(settingKeys);
   const [active, setActive] = useState<BaseSection>('brand');
   const [form, setForm] = useState(defaults);
   const [saved, setSaved] = useState(defaults);
@@ -100,12 +97,13 @@ export function BaseSettingsPanel({ canManage }: { canManage: boolean }) {
   const iconInputRef = useRef<HTMLInputElement | null>(null);
   const queryClient = useQueryClient();
   const query = useQuery({ queryKey: pkiQueryKeys.settings, queryFn: getPkiSettings });
+  usePageRefresh(() => void query.refetch());
   useEffect(() => {
     if (!query.data) return;
     const next = { ...defaults, ...query.data };
     setForm(next);
     setSaved(next);
-  }, [query.data]);
+  }, [query.data, query.dataUpdatedAt]);
   const mutation = useMutation({
     mutationFn: savePkiSettings,
     onSuccess: saved => {
