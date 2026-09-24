@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { invalidatePublicAuthConfiguration, WECOM_PROVIDERS_CHANGED_EVENT } from '@/lib/auth';
 import { fetchWecomProvider, saveWecomProvider } from '@/lib/system-settings';
+import { usePageRefresh } from '@/features/pki/support';
 import {
   ActionButton,
   ConfigField,
@@ -176,6 +177,8 @@ export function WeComSettingsPanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePageRefresh(load);
 
   function updateField(field: SettingsField, value: unknown) {
     setClearRequested(false);

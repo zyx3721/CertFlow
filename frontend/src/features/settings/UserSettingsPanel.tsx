@@ -21,6 +21,7 @@ import {
   updateUserGroup,
   updateRoleDisabled,
 } from '@/lib/system-settings';
+import { usePageRefresh } from '@/features/pki/support';
 import type { Permission, Role, SettingsUser, UserGroup } from './types';
 import { RoleEditorDialog } from './RoleEditorDialog';
 import { GroupEditorDialog, UserEditorDialog } from './UserSettingsDialogs';
@@ -93,10 +94,9 @@ export function UserSettingsPanel({ canManage }: { canManage: boolean }) {
 
   useEffect(() => {
     void load();
-    const refresh = () => void load();
-    window.addEventListener('certflow:refresh', refresh);
-    return () => window.removeEventListener('certflow:refresh', refresh);
   }, [load]);
+
+  usePageRefresh(load);
 
   const keyword = search.trim().toLowerCase();
   const filteredUsers = useMemo(

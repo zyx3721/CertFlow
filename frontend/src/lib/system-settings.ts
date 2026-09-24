@@ -1,7 +1,6 @@
 import { api } from '@/lib/auth';
 import type {
   AuthProviderSetting,
-  EmailSetting,
   NotificationChannel,
   Permission,
   Role,
@@ -104,24 +103,6 @@ export const saveWecomProvider = (body: {
   api<WeComProviderSetting>('/api/v1/settings/auth-provider/wecom', {
     method: 'PUT',
     body: JSON.stringify(body),
-  });
-
-export const fetchEmailSetting = () => api<EmailSetting>('/api/v1/settings/email');
-
-export const saveEmailSetting = (body: {
-  passwordResetEnabled: boolean;
-  clearConfig: boolean;
-  config: Record<string, unknown>;
-}) =>
-  api<EmailSetting>('/api/v1/settings/email', {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
-
-export const testEmailSetting = (to: string) =>
-  api<{ status: string }>('/api/v1/settings/email/test', {
-    method: 'POST',
-    body: JSON.stringify({ to }),
   });
 
 export const fetchNotificationChannels = () =>

@@ -10,8 +10,9 @@ import {
   Trash2,
   Webhook,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { usePageRefresh } from '@/features/pki/support';
 import {
   fetchNotificationChannels,
   saveNotificationChannel,
@@ -262,13 +263,18 @@ export function NotificationSettingsPanel({ canManage }: { canManage: boolean })
   const isEmail = selected === 'email';
   const savedApprovalEnabled = channels[selected]?.approvalEnabled ?? false;
   const savedPasswordResetEnabled = channels[selected]?.passwordResetEnabled ?? false;
-  useEffect(() => {
-    void fetchNotificationChannels()
-      .then(response =>
-        setChannels(Object.fromEntries(response.items.map(item => [item.id, item])))
-      )
-      .catch(error => toast.error(error instanceof Error ? error.message : '读取通知配置失败'));
+  const load = useCallback(async () => {
+    try {
+      const response = await fetchNotificationChannels();
+      setChannels(Object.fromEntries(response.items.map(item => [item.id, item])));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '读取通知配置失败');
+    }
   }, []);
+  useEffect(() => {
+    void load();
+  }, [load]);
+  usePageRefresh(load);
   useEffect(() => {
     const item = channels[selected];
     const config = notificationFormConfig(selected, item?.config ?? {});

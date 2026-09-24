@@ -75,14 +75,6 @@ export type WeComProviderSetting = {
   };
 };
 
-export type EmailSetting = {
-  id: string;
-  name: string;
-  passwordResetEnabled: boolean;
-  config: Record<string, unknown>;
-  updatedAt: string;
-};
-
 export type NotificationChannel = {
   id: string;
   name: string;

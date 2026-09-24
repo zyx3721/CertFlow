@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { invalidatePublicAuthConfiguration } from '@/lib/auth';
+import { usePageRefresh } from '@/features/pki/support';
 import {
   fetchAuthProvider,
   fetchWecomProvider,
@@ -111,6 +112,8 @@ export function AuthSettingsPanel({ canManage }: { canManage: boolean }) {
   useEffect(() => {
     void refreshSummaries();
   }, [refreshSummaries]);
+
+  usePageRefresh(refreshSummaries);
 
   return (
     <SettingsSplitLayout
@@ -215,6 +218,8 @@ function LDAPSettingsPanel({ canManage, onSaved }: { canManage: boolean; onSaved
   useEffect(() => {
     void load();
   }, [load]);
+
+  usePageRefresh(load);
 
   function updateField(field: SettingsField, value: unknown) {
     setClearRequested(false);

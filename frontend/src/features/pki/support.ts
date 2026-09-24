@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 export const pkiQueryKeys = {
@@ -43,15 +43,25 @@ export const revokeReasonLabels = {
   cessationOfOperation: '停止运营',
 } as const;
 
-export function usePageRefresh(queryKeys: readonly (readonly string[])[]) {
+// usePageRefresh 监听全局刷新事件，支持失效 react-query 缓存或执行自定义加载回调
+export function usePageRefresh(target: readonly (readonly string[])[] | (() => void)) {
   const queryClient = useQueryClient();
+  const targetRef = useRef(target);
+  useEffect(() => {
+    targetRef.current = target;
+  });
   useEffect(() => {
     const refresh = () => {
-      for (const queryKey of queryKeys) {
+      const current = targetRef.current;
+      if (typeof current === 'function') {
+        current();
+        return;
+      }
+      for (const queryKey of current) {
         void queryClient.invalidateQueries({ queryKey });
       }
     };
     window.addEventListener('certflow:refresh', refresh);
     return () => window.removeEventListener('certflow:refresh', refresh);
-  }, [queryClient, queryKeys]);
+  }, [queryClient]);
 }
