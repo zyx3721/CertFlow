@@ -523,6 +523,7 @@ CertFlow/
 │       ├── router.tsx       Router instance
 │       ├── start.ts         React Start client entry
 │       └── server.ts        Server entry and error handling
+├── scripts/                 Service start/stop and online update scripts
 ├── .github/                 GitHub Actions workflows and preview images
 ├── .dockerignore            Docker build ignore rules
 ├── .gitignore               Git ignore rules

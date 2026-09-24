@@ -92,6 +92,7 @@ CertFlow/
 │       ├── router.tsx       路由实例
 │       ├── start.ts         React Start 入口
 │       └── server.ts        服务端入口与错误处理
+├── scripts/                 服务启停与在线更新脚本
 ├── .dockerignore            Docker 构建忽略规则
 ├── .gitignore               Git 忽略规则
 └── README.md                项目说明文档
